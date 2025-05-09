@@ -1,2 +1,2 @@
 # HRMS
-Human Resource Managment System
+Human Resource Managment System Backend
