@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import userModel from '../models/User.js';
+import bcrypt from 'bcrypt';
 dotenv.config();
 
 export const authenticate = async(req, res, next) => {
@@ -34,3 +35,18 @@ export const authorizeRoles = (...roles) => {
     }
   };
 };
+
+
+export const isVerifiedPass = async (req, res, next) => {
+
+      const { email, password } = req.body;
+        const user = await userModel.findOne({ email })
+
+   if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+
+next()
+
+}
