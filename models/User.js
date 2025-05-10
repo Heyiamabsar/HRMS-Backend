@@ -6,8 +6,10 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'hr', 'employee'], default: 'employee' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+}, { timestamps: true });
 
-});
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next(); // Only hash if password is new/modified
