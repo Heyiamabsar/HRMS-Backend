@@ -5,6 +5,8 @@ export const getAllUsers = async (req, res) => {
   try {
     const filter = req.user.role === 'hr' ? { role: 'employee' } : { role: { $in: ['employee', 'hr'] } };
     const users = await User.find(filter).select('-password -__v');
+
+
     res.status(200).json({
       success: true,
       statusCode: 200,
