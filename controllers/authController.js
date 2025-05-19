@@ -8,10 +8,10 @@ export const register = async (req, res) => {
   try {
 const {
   first_name, last_name, email, password, role,
-  department, address, designation,
+  department, address, designation,userId,
   joining_date, salary, status
 } = req.body;
-      if (!first_name ||!last_name || !email || !password || !role) {
+      if (!first_name ||!last_name || !email || !password || !role || !userId) {
       return res.status(400).json({ success : false,  statusCode: 400, error: "All fields are required" });
     }
 
@@ -23,7 +23,7 @@ const {
     // const user = await userModel.create({ first_name, last_name, email, password, role });
       const user = await userModel.create({
       first_name, last_name, email, password, role,
-      department, address, designation,
+      department, address, designation,userId,
       joining_date, salary, status
     });
 
