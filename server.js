@@ -6,6 +6,7 @@ import connectDB from "./config/dbConnection.js";
 import cors from "cors";
 import employeeRouter from "./routes/employeeRoutes.js";
 import hrRouter from "./routes/hrRoutes.js";
+import uploadRouter from "./routes/uploadRoutes.js";
 
 
 dotenv.config();
@@ -21,6 +22,7 @@ app.use(cors({
 app.use("/api/auth", authRoutes);
 app.use("/api/employee", employeeRouter);
 app.use("/api/hr", hrRouter);
+app.use('/api', uploadRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
