@@ -19,6 +19,7 @@ const leaveSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
 
 
+
   appliedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
