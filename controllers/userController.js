@@ -1,47 +1,7 @@
 import User from '../models/userModel.js';
 
 
-export const handleFileUpload = async (req, res) => {
-  try {
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
-    }
-
-    const files = req.files.map((file) => ({
-        _id: new mongoose.Types.ObjectId(),
-      filename: file.originalname,
-      url: file.path,
-      mimetype: file.mimetype,
-      size: file.size,
-    }));
-    
-
-    const newUpload = new UploadModel({
-      title: req.body.title || 'Untitled',
-      files,
-      user: req.body.userId ? req.body.userId : null,
-    });
-
-    const savedUpload = await newUpload.save();
-
-    await UserModel.findByIdAndUpdate(req.body.userId, {
-      $push: { uploads: savedUpload },
-    });
-
-    const populatedUpload = await UploadModel.findById(savedUpload._id).populate('user');
-
-    res.status(200).json({
-      message: `${req.files.length} Files uploaded successfully`,
-      count: req.files.length,
-      title: req.body.title,
-      files,
-      user: populatedUpload.user
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-};
 
 // Get All Users
 export const getAllUsers = async (req, res) => {

@@ -6,28 +6,16 @@ dotenv.config();
 
 export const register = async (req, res) => {
   try {
-const {
-  first_name, last_name, email, password, role,
-  department, address, designation,userId,
-  joining_date, salary, status
-} = req.body;
-      if (!first_name ||!last_name || !email || !password || !role || !userId) {
-      return res.status(400).json({ success : false,  statusCode: 400, error: "All fields are required" });
-    }
 
+    const { email } = req.body;
+     
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success : false,  statusCode: 400,error: "Email already exists" });
     }
-    
-    // const user = await userModel.create({ first_name, last_name, email, password, role });
-      const user = await userModel.create({
-      first_name, last_name, email, password, role,
-      department, address, designation,userId,
-      joining_date, salary, status
-    });
-
-     const userObj = user.toObject();
+  
+    const user = await userModel.create(req.body);
+    const userObj = user.toObject();
     delete userObj.password;
 
     res.status(201).json({success : true,  statusCode: 201,
