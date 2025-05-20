@@ -2,8 +2,9 @@ import mongoose from 'mongoose';
 
 const fileSchema = new mongoose.Schema({
    _id: { type: mongoose.Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() },
+   url: { type: String }, // Cloudinary secure URL
+  public_id: { type: String }, // Cloudinary public ID
   filename: {type: String},
-  url:  {type: String},
   mimetype:  {type: String},
   size:  {type: Number},
   
