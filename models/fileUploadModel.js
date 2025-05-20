@@ -14,10 +14,10 @@ const uploadSchema = new mongoose.Schema({
   files: [fileSchema], 
    user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'UserModel',
+      ref: 'User',
     },
   uploadedAt: { type: Date, default: Date.now, },
-  userId : {type: mongoose.Schema.Types.ObjectId, ref: 'UserModel'},
+  userId : {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
 });
 const UploadModel = mongoose.model('Upload', uploadSchema);
 

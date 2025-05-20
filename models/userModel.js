@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   department: {type: String, required: true},
   userId: {type: String, required: true},
+    uploads: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Upload'
+  }],
   address: {
     country: { type: String, required: true },
     state: { type: String, required: true },

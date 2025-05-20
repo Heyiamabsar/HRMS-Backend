@@ -1,7 +1,7 @@
-
+import UploadModel from "../models/fileUploadModel.js";
 import mongoose from 'mongoose';
-import UserModel from "../models/userModel.js";
-import UploadModel from '../models/fileUploadModel.js';
+import userModel from "../models/userModel.js";
+
 
 
 export const handleFileUpload = async (req, res) => {
@@ -28,7 +28,7 @@ export const handleFileUpload = async (req, res) => {
 
     const savedUpload = await newUpload.save();
 
-    await UserModel.findByIdAndUpdate(req.body.userId, {
+    await userModel.findByIdAndUpdate(req.body.userId, {
       $push: { uploads: savedUpload },
     });
 
@@ -81,6 +81,8 @@ console.log("Get Upload ID:", id);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+
 export const deleteUpload = async (req, res) => {
   const { id } = req.params;
 
@@ -96,6 +98,7 @@ export const deleteUpload = async (req, res) => {
 
     res.status(200).json({ message: 'Upload deleted successfully' });
   } catch (error) {
+    console.error("Delete Upload Error:", error);
     res.status(500).json({ error: 'Server error' });
   }
 };
