@@ -6,6 +6,14 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Upload'
   }],
+  attendance: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Attendance'
+  }],
+  leaves: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Leave'
+  }],
   first_name: { type: String,required: [true, 'First name is required'],trim: true, minlength: [2, 'First name must be at least 2 characters'], maxlength: [50, 'First name must be less than 50 characters'] },
   last_name: { type: String, trim: true, maxlength: [50, 'Last name must be less than 50 characters'] },
   phone: { type: Number, required: [true, 'Phone number is required'], minlength: [10, 'Phone number must be 10 digits'], maxlength: [10, 'Phone number must be 10 digits'] },

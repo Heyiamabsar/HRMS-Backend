@@ -22,6 +22,7 @@ export const authorizeRoles = (...roles) => {
     try {
 
       console.log('User ID:', req.user);
+      
       const user = await userModel.findById(req.user._id).select('role');
       if (!user) return res.status(404).json({ message: 'User not found' });
 

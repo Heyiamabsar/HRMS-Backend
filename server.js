@@ -7,6 +7,8 @@ import cors from "cors";
 import employeeRouter from "./routes/employeeRoutes.js";
 import hrRouter from "./routes/hrRoutes.js";
 import uploadRouter from "./routes/uploadRoutes.js";
+import leaveRouter from "./routes/leaveRoutes.js";
+import attendanceRouter from "./routes/attendanceRoutes.js";
 
 
 dotenv.config();
@@ -23,6 +25,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/employee", employeeRouter);
 app.use("/api/hr", hrRouter);
 app.use('/api', uploadRouter);
+app.use('/api/leaves', leaveRouter);
+app.use('/api/attendance', attendanceRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
