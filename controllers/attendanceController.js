@@ -94,12 +94,19 @@ export const getTodayAttendance = async (req, res) => {
 
       if (inTime.isSameOrBefore(nineFifteen)) {
         todayStatus = 'Present';
-      } else if (outTime) {
-        const duration = moment.duration(outTime.diff(inTime)).asHours();
-        if (duration > 5 && duration < 9) {
-          todayStatus = 'Half Day';
-        }
+      } else {
+        todayStatus = 'Half Day';
       }
+
+      // if (inTime.isSameOrBefore(nineFifteen)) {
+      //   todayStatus = 'Present';
+      // } else if (outTime) {
+      //   const duration = moment.duration(outTime.diff(inTime)).asHours();
+      //   // duration > 5 && duration < 9
+      //   if (duration < 9) {
+      //     todayStatus = 'Half Day';
+      //   }
+      // }
     }
 
     res.status(200).json({
@@ -117,6 +124,7 @@ export const getTodayAttendance = async (req, res) => {
   }
 };
 
+// Get all users' attendance for today
 export const getAllUsersTodayAttendance = async (req, res) => {
   try {
     const date = moment().format('YYYY-MM-DD');
@@ -133,13 +141,20 @@ export const getAllUsersTodayAttendance = async (req, res) => {
         const outTime = attendance.outTime ? moment(attendance.outTime) : null;
 
         if (inTime.isSameOrBefore(nineFifteen)) {
-          todayStatus = 'Present';
-        } else if (outTime) {
-          const duration = moment.duration(outTime.diff(inTime)).asHours();
-          if (duration > 5 && duration < 9) {
-            todayStatus = 'Half Day';
-          }
-        }
+        todayStatus = 'Present';
+      } else {
+        todayStatus = 'Half Day';
+      }
+
+        // if (inTime.isSameOrBefore(nineFifteen)) {
+        //   todayStatus = 'Present';
+        // } else if (outTime) {
+        //   const duration = moment.duration(outTime.diff(inTime)).asHours();
+        //      //duration > 5 && duration < 9
+        //   if (duration < 9) {
+        //     todayStatus = 'Half Day';
+        //   }
+        // }
       }
 
       return {
@@ -165,6 +180,7 @@ export const getAllUsersTodayAttendance = async (req, res) => {
   }
 };
 
+// Get single user's full attendance history
 export const getSingleUserFullAttendanceHistory = async (req, res) => {
   try {
     const userId = req.userId;
@@ -186,9 +202,10 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 
         if (hours >= 9 && inTime.isSameOrBefore(cutoffTime)) {
           status = 'Present';
-        } else if (hours > 5) {
-          status = 'Half Day';
-        }
+        } 
+        // else if (hours > 5) {
+        //   status = 'Half Day';
+        // }
       }
 
       return {
@@ -217,6 +234,8 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
   }
 };
 
+// Get all users' full attendance history
+// Admin or HR only
 export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
     const records = await AttendanceModel.find();
@@ -244,17 +263,17 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
           const diff = moment.duration(outTime.diff(inTime));
           const hours = diff.asHours();
           duration = `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
-
-          if (hours >= 9 && inTime.isSameOrBefore(cutoffTime)) {
+          // && inTime.isSameOrBefore(cutoffTime)
+          if (hours >= 9 ) {
             status = 'Present';
-          } else if (hours > 5) {
+          } else {
             status = 'Half Day';
           }
         }
 
-        if (inTime && inTime.isAfter(cutoffTime)) {
-          status = 'Half Day';
-        }
+        // if (inTime && inTime.isAfter(cutoffTime)) {
+        //   status = 'Half Day';
+        // }
 
         return {
           date: moment(record.date).format('YYYY-MM-DD'),

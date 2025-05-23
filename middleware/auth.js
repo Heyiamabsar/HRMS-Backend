@@ -20,7 +20,7 @@ export const authenticate = async(req, res, next) => {
 export const authorizeRoles = (...roles) => {
   return async (req, res, next) => {
     try {
-
+  console.log('start')
       console.log('User ID:', req.user);
       
       const user = await userModel.findById(req.user._id).select('role');
@@ -29,7 +29,7 @@ export const authorizeRoles = (...roles) => {
       if (!roles.includes(user.role)) {
         return res.status(403).json({ message: 'Access denied' });
       }
-
+    console.log('end')
       next();
     } catch (err) {
       res.status(500).json({ message: 'Server Error', error: err.message });

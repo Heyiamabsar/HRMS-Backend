@@ -6,9 +6,9 @@ import userModel from "../models/userModel.js";
 export const applyLeave= async (req, res) => {
     try {
         console.log("Leave application request body:", req.body);
-        console.log("Leave application request user:", req.userId);
+        console.log("Leave application request user:", req.body.userId);
         const {employee , userId, leaveType, fromDate, toDate, reason } = req.body;
-        const employeeId = req.userId;
+        const employeeId = userId
         const leaveDays = Math.ceil((new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24)) + 1;
         const existingLeaves = await LeaveModel.find({ employee: employeeId });
         const totalLeaveTaken = existingLeaves.reduce((acc, leave) => acc + leave.leaveTaken, 0);
@@ -43,3 +43,62 @@ export const applyLeave= async (req, res) => {
         
     }
 }
+
+export const updateLeaveStatus = async (req, res) => {
+  try {
+    const leaveId = req.params.id;
+    const { status } = req.body;
+console.log("Leave status update request body:", leaveId);
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const leave = await LeaveModel.findById(leaveId);
+    if (!leave) return res.status(404).json({ message: 'Leave not found' });
+
+    leave.status = status;
+    await leave.save();
+
+    res.status(200).json({ message: `Leave ${status} successfully`, leave });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update leave status', error: error.message });
+  }
+};
+
+
+export const getAllLeavesStatus = async (req, res) => {
+  try {
+    const leaves = await LeaveModel.find()
+      .populate("employee", "first_name last_name email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!leaves || leaves.length === 0) {
+      return res.status(404).json({ message: "No leaves found." });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: leaves.length,
+      data: leaves
+    });
+
+  } catch (error) {
+    console.error("Error in getAllLeavesStatus:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error. Failed to fetch leaves.",
+      error: error.message
+    });
+  }
+};
+
+
+export const getMyLeaves = async (req, res) => {
+  try {
+    const leaves = await LeaveModel.find({ employee: req.user.id }).populate('employee', 'first_name last_name email');
+    res.status(200).json(leaves);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch your leaves', error: error.message });
+  }
+};

@@ -2,19 +2,24 @@
 import express from 'express';
 import {
   applyLeave,
+  getAllLeavesStatus,
+  getMyLeaves,
+  updateLeaveStatus,
 //   getAllLeaves,
 //   getLeaveById,
 //   updateLeaveStatus,
 //   deleteLeave
 } from '../controllers/leaveController.js';
-import { authorizeRoles } from '../middleware/auth.js';
+import { authenticate, authorizeRoles } from '../middleware/auth.js';
 
 const leaveRouter = express.Router();
 
-leaveRouter.post('/apply', applyLeave);
+leaveRouter.post('/apply_leave', applyLeave);
+leaveRouter.put('/update_leave/:id', updateLeaveStatus);
+leaveRouter.get('/:id', authenticate,  authorizeRoles('admin', 'hr', 'employee'),getMyLeaves);
+leaveRouter.get('/',getAllLeavesStatus);
+
 // leaveRouter.get('/', getAllLeaves);
-// leaveRouter.get('/:id', getLeaveById);
-// leaveRouter.put('/:id/status', updateLeaveStatus);
 // leaveRouter.delete('/:id', deleteLeave);
 
 export default leaveRouter;
