@@ -11,7 +11,7 @@ attendanceRouter.post('/check_out', authenticate, authorizeRoles('admin', 'hr', 
 attendanceRouter.get('/single_user_today_attendance', authenticate, authorizeRoles('admin', 'hr', 'employee'), getTodayAttendance);
 attendanceRouter.get('/single_user_attendance_history', authenticate, authorizeRoles('admin', 'hr', 'employee'), getSingleUserFullAttendanceHistory);
 
-attendanceRouter.get('/all_users_today_attendance', authenticate, authorizeRoles('admin', 'hr', 'employee'), getAllUsersTodayAttendance);
-attendanceRouter.get('/all_user_attendance_history', authenticate, authorizeRoles('admin', 'hr', 'employee'), getAllUsersFullAttendanceHistory);
+attendanceRouter.get('/all_users_today_attendance', authenticate, authorizeRoles('admin', 'hr'), getAllUsersTodayAttendance);
+attendanceRouter.get('/all_user_attendance_history', authenticate, authorizeRoles('admin', 'hr'), getAllUsersFullAttendanceHistory);
 
 export default attendanceRouter;
