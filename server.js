@@ -9,6 +9,7 @@ import hrRouter from "./routes/hrRoutes.js";
 import uploadRouter from "./routes/uploadRoutes.js";
 import leaveRouter from "./routes/leaveRoutes.js";
 import attendanceRouter from "./routes/attendanceRoutes.js";
+import holidayRouter from "./routes/holidayRoutes.js";
 
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use("/api/hr", hrRouter);
 app.use('/api', uploadRouter);
 app.use('/api/attendance', attendanceRouter);
 app.use('/api/leaves', leaveRouter);
+app.use('/api/holidays', holidayRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

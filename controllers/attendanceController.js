@@ -2,6 +2,9 @@
 import moment from 'moment';
 import AttendanceModel from '../models/attendanceModule.js';
 import userModel from '../models/userModel.js';
+import holidayModel from '../models/holidayModule.js';
+import { formatAttendanceRecord } from '../utils/attendanceUtils.js';
+
 
 // Punch IN
 export const markInTime = async (req, res) => {
@@ -87,13 +90,22 @@ export const getTodayAttendance = async (req, res) => {
 
     let todayStatus = 'Absent';
 
-    if (attendance && attendance.inTime) {
+    const holiday = await holidayModel.findOne({ date });
+    if (holiday) {
+      todayStatus = 'Holiday';
+    } else  if (attendance && attendance.inTime) {
       const inTime = moment(attendance.inTime);
       const outTime = attendance.outTime ? moment(attendance.outTime) : null;
       const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A');
 
       if (inTime.isSameOrBefore(nineFifteen)) {
         todayStatus = 'Present';
+      } else if (outTime) {
+        const duration = moment.duration(outTime.diff(inTime)).asHours();
+        // duration > 5 && duration < 9
+        if (duration < 9) {
+          todayStatus = 'Half Day';
+        }
       } else {
         todayStatus = 'Half Day';
       }
@@ -129,42 +141,50 @@ export const getAllUsersTodayAttendance = async (req, res) => {
   try {
     const date = moment().format('YYYY-MM-DD');
 
-    const attendances = await AttendanceModel.find({ date }).populate('userId', 'name email'); // assuming userId is a reference
+    const attendances = await AttendanceModel.find({ date }).populate('userId', 'name email'); 
 
     const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A');
+    const holiday = await holidayModel.findOne({ date });
 
-    const result = attendances.map(attendance => {
-      let todayStatus = 'Absent';
+    const result = await Promise.all(attendances.map(async (attendance) => {
 
-      if (attendance.inTime) {
-        const inTime = moment(attendance.inTime);
-        const outTime = attendance.outTime ? moment(attendance.outTime) : null;
+          let todayStatus = 'Absent';
 
-        if (inTime.isSameOrBefore(nineFifteen)) {
-        todayStatus = 'Present';
-      } else {
-        todayStatus = 'Half Day';
-      }
+            if (holiday) {
+              todayStatus = 'Holiday';
+            } else if (attendance.inTime) {
+            const inTime = moment(attendance.inTime);
+            const outTime = attendance.outTime ? moment(attendance.outTime) : null;
 
-        // if (inTime.isSameOrBefore(nineFifteen)) {
-        //   todayStatus = 'Present';
-        // } else if (outTime) {
-        //   const duration = moment.duration(outTime.diff(inTime)).asHours();
-        //      //duration > 5 && duration < 9
-        //   if (duration < 9) {
-        //     todayStatus = 'Half Day';
-        //   }
-        // }
-      }
+          if (inTime.isSameOrBefore(nineFifteen)) {
+            todayStatus = 'Present';
+          } else if (outTime) {
+            const duration = moment.duration(outTime.diff(inTime)).asHours();
+            if (duration < 9) {
+              todayStatus = 'Half Day';
+            }
+          } else {
+            todayStatus = 'Half Day';
+          }
 
-      return {
-        user: attendance.userId,
-        date: attendance.date,
-        inTime: attendance.inTime,
-        outTime: attendance.outTime,
-        todayStatus,
-      };
-    });
+            // if (inTime.isSameOrBefore(nineFifteen)) {
+            //   todayStatus = 'Present';
+            // } else if (outTime) {
+            //   const duration = moment.duration(outTime.diff(inTime)).asHours();
+            //   if (duration < 9) {
+            //     todayStatus = 'Half Day';
+            //   }
+            // }
+          }
+
+          return {
+            user: attendance.userId,
+            date: attendance.date,
+            inTime: attendance.inTime,
+            outTime: attendance.outTime,
+            todayStatus,
+          };
+        }));
 
     res.status(200).json({
       success: true,
@@ -183,9 +203,12 @@ export const getAllUsersTodayAttendance = async (req, res) => {
 // Get single user's full attendance history
 export const getSingleUserFullAttendanceHistory = async (req, res) => {
   try {
-    const userId = req.userId;
 
+    const userId = req.user._id;
+    console.log("userId", userId);
     const records = await AttendanceModel.find({ userId }).sort({ date: -1 });
+console.log("records", records);
+      //  const formattedRecords = records.map(formatAttendanceRecord);
 
     const formattedRecords = records.map(record => {
       const inTime = record.inTime ? moment(record.inTime) : null;
@@ -239,9 +262,8 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
     const records = await AttendanceModel.find();
-    const users = await userModel.find({}, '_id name'); // get user list (name optional)
+    const users = await userModel.find({}, '_id name'); 
 
-    // Group records by userId
     const attendanceByUser = {};
     records.forEach(record => {
       const userId = record.userId;
@@ -284,6 +306,8 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
         };
       });
 
+      // const formatted = userAttendance.map(formatAttendanceRecord); 
+      
       return {
         userId: user._id,
         name: user.name,
