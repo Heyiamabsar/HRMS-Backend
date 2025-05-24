@@ -1,5 +1,5 @@
 
-import moment from 'moment';
+import moment from 'moment-timezone';
 import AttendanceModel from '../models/attendanceModule.js';
 import userModel from '../models/userModel.js';
 import holidayModel from '../models/holidayModule.js';
@@ -10,17 +10,17 @@ import { formatAttendanceRecord } from '../utils/attendanceUtils.js';
 export const markInTime = async (req, res) => {
   try {
 
-    const userId = req.user._id; // from auth middleware
-
-    const date = moment().format('YYYY-MM-DD');
-
+    const userId = req.user._id;
+    const user = await userModel.findById(userId);
+    const userTimeZone = user.timeZone || 'UTC';
+    const date = moment().tz(userTimeZone).format('YYYY-MM-DD');
     const existing = await AttendanceModel.findOne({ userId, date });
 
     if (existing && existing.inTime) {
       return res.status(400).json({ success: false, statusCode: 400, message: 'Already punched in today' });
     }
 
-    const inTime = new Date();
+   const inTime = moment().tz(userTimeZone).toDate();
 
     const attendance = await AttendanceModel.findOneAndUpdate(
       { userId, date },
@@ -42,8 +42,10 @@ export const markInTime = async (req, res) => {
 // Punch OUT
 export const markOutTime = async (req, res) => {
   try {
+
     const userId = req.user._id;
-    const date = moment().format('YYYY-MM-DD');
+    const userTimeZone = req.user.timeZone || 'UTC';
+    const date = moment().tz(userTimeZone).format('YYYY-MM-DD');
 
     const attendance = await AttendanceModel.findOne({ userId, date });
 
@@ -59,9 +61,10 @@ export const markOutTime = async (req, res) => {
       });
     }
 
-    const outTime = new Date();
+    const outTime = moment().tz(userTimeZone).toDate();
+    
 
-    const durationMs = new Date(outTime) - new Date(attendance.inTime);
+    const durationMs = outTime - new Date(attendance.inTime);
     const duration = moment.utc(durationMs).format('HH:mm:ss');
 
     attendance.outTime = outTime;
@@ -84,19 +87,21 @@ export const markOutTime = async (req, res) => {
 export const getTodayAttendance = async (req, res) => {
   try {
     const userId = req.user._id;
-    const date = moment().format('YYYY-MM-DD');
+    const userTimeZone = req.user.timeZone || 'UTC';
+    const date = moment().tz(userTimeZone).format('YYYY-MM-DD');
 
     const attendance = await AttendanceModel.findOne({ userId, date });
 
     let todayStatus = 'Absent';
 
     const holiday = await holidayModel.findOne({ date });
+
     if (holiday) {
       todayStatus = 'Holiday';
     } else  if (attendance && attendance.inTime) {
-      const inTime = moment(attendance.inTime);
-      const outTime = attendance.outTime ? moment(attendance.outTime) : null;
-      const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A');
+    const inTime = moment(attendance.inTime).tz(userTimeZone);
+      const outTime = attendance.outTime ? moment(attendance.outTime).tz(userTimeZone) : null;
+      const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A').tz(userTimeZone);
 
       if (inTime.isSameOrBefore(nineFifteen)) {
         todayStatus = 'Present';
@@ -140,10 +145,13 @@ export const getTodayAttendance = async (req, res) => {
 export const getAllUsersTodayAttendance = async (req, res) => {
   try {
     const date = moment().format('YYYY-MM-DD');
+    const userId = req.user._id;
+    // const user = await userModel.findById(userId);
+    const userTimeZone = req.user.timeZone || 'UTC';
 
-    const attendances = await AttendanceModel.find({ date }).populate('userId', 'name email'); 
+    const attendances = await AttendanceModel.find({ date }).populate('userId', 'name email');
 
-    const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A');
+    const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A').tz(userTimeZone);
     const holiday = await holidayModel.findOne({ date });
 
     const result = await Promise.all(attendances.map(async (attendance) => {
@@ -153,8 +161,8 @@ export const getAllUsersTodayAttendance = async (req, res) => {
             if (holiday) {
               todayStatus = 'Holiday';
             } else if (attendance.inTime) {
-            const inTime = moment(attendance.inTime);
-            const outTime = attendance.outTime ? moment(attendance.outTime) : null;
+           const inTime = moment(attendance.inTime).tz(userTimeZone);
+           const outTime = attendance.outTime ? moment(attendance.outTime).tz(userTimeZone) : null;
 
           if (inTime.isSameOrBefore(nineFifteen)) {
             todayStatus = 'Present';
@@ -205,21 +213,22 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
   try {
 
     const userId = req.user._id;
-    console.log("userId", userId);
+    const userTimeZone = req.user.timeZone || 'UTC';
     const records = await AttendanceModel.find({ userId }).sort({ date: -1 });
-console.log("records", records);
+
       //  const formattedRecords = records.map(formatAttendanceRecord);
 
     const formattedRecords = records.map(record => {
-      const inTime = record.inTime ? moment(record.inTime) : null;
-      const outTime = record.outTime ? moment(record.outTime) : null;
-      const cutoffTime = moment(record.date).hour(9).minute(15); // 9:15 AM
+      const inTime = record.inTime ? moment(record.inTime).tz(userTimeZone) : null;
+      const outTime = record.outTime ? moment(record.outTime).tz(userTimeZone) : null;
+      const cutoffTime = moment(record.date).hour(9).minute(15).tz(userTimeZone); // 9:15 AM
 
       let duration = null;
       let status = 'Absent';
 
       if (inTime && outTime) {
         const diff = moment.duration(outTime.diff(inTime));
+        
         const hours = diff.asHours();
         duration = `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
 
@@ -261,8 +270,10 @@ console.log("records", records);
 // Admin or HR only
 export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
+
     const records = await AttendanceModel.find();
     const users = await userModel.find({}, '_id name'); 
+    const userTimeZone = req.user.timeZone || 'UTC';
 
     const attendanceByUser = {};
     records.forEach(record => {
@@ -275,9 +286,9 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
       const userAttendance = attendanceByUser[user._id] || [];
 
       const formatted = userAttendance.map(record => {
-        const inTime = record.inTime ? moment(record.inTime) : null;
-        const outTime = record.outTime ? moment(record.outTime) : null;
-        const cutoffTime = moment(record.date).hour(9).minute(15); // 9:15 AM
+        const inTime = record.inTime ? moment(record.inTime).tz(userTimeZone) : null;
+        const outTime = record.outTime ? moment(record.outTime).tz(userTimeZone) : null;
+        const cutoffTime = moment(record.date).hour(9).minute(15).tz(userTimeZone); // 9:15 AM
         let duration = null;
         let status = 'Absent';
 
