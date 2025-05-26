@@ -1,5 +1,47 @@
 import User from '../models/userModel.js';
+import moment from 'moment-timezone';
 
+
+// Save User Time Zone
+export const saveUserTimeZone = async (req, res) => {
+  try {
+    const { timeZone } = req.body;
+
+    if (!timeZone) {
+      return res.status(400).json({ statusCode: 400, success: false, message: 'Time zone is required' });
+    }
+
+    //  Validate timeZone using moment-timezone
+    const isValidTimeZone = moment.tz.zone(timeZone);
+    if (!isValidTimeZone) {
+      return res.status(400).json({ statusCode: 400, success: false, message: 'Invalid time zone provided' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { timeZone },
+      { new: true, runValidators: true }
+    ).select('timeZone');
+
+    if (!user) {
+      return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      success: true,
+      message: 'Time zone updated successfully',
+      data: { timeZone: user.timeZone },
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: 'Failed to update time zone',
+      error: error.message,
+    });
+  }
+};
 
 
 

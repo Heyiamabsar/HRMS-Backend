@@ -27,18 +27,15 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { email, timeZone } = req.body;
+    const { email } = req.body;
     const user = await userModel.findOne({ email }).select('-password');
   
     if (!user) {
       return res.status(404).json({ success: false, statusCode: 404, message: 'User not found' });
     }
-
-       user.timeZone = timeZone; 
-    await user.save();
    
     // Generate JWT token
-    const token = jwt.sign({ _id: user._id, role: user.role,timeZone}, process.env.JWT_SECRET,{ expiresIn: '9h' }) ;
+    const token = jwt.sign({ _id: user._id, role: user.role}, process.env.JWT_SECRET,{ expiresIn: '9h' }) ;
     res.json({
       success : true,  
       statusCode: 200,
