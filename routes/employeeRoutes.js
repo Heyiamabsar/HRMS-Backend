@@ -10,7 +10,7 @@ employeeRouter.get('/', authorizeRoles('admin', 'hr'), getAllUsers);
 employeeRouter.get('/:id', authorizeRoles('admin', 'hr', 'employee'), getUserById);
 employeeRouter.put('/:id', authorizeRoles('admin', 'hr'), updateUser);
 employeeRouter.delete('/:id', authorizeRoles('admin', 'hr'), deleteUser);
-employeeRouter.get('/timezone', authenticate, authorizeRoles('admin', 'hr', 'employee'), saveUserTimeZone);
+employeeRouter.post('/timezone', authenticate, authorizeRoles('admin', 'hr', 'employee'), saveUserTimeZone);
 
 export default employeeRouter;
 
