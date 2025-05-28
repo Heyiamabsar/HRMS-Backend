@@ -59,7 +59,7 @@ export const updateLeaveStatus = async (req, res) => {
       const totalLeaveTaken = existingLeaves.reduce((acc, leave) => acc + leave.leaveTaken, 0);
       const leaveBalance = 20 - totalLeaveTaken;
 
-      if (leaveBalance < leaveDays) {
+      if (leaveBalance < totalLeaveTaken) {
         return res.status(400).json({ message: 'Insufficient leave balance' });
       }
         leave.leaveBalance = leaveBalance - leave.leaveTaken;
