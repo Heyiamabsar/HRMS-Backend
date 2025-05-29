@@ -272,7 +272,7 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
 
     const records = await AttendanceModel.find();
-    const users = await userModel.find({}, '_id name'); 
+    const users = await userModel.find({}, '-attendance -leaves');
     const userTimeZone = req.user.timeZone || 'UTC';
 
     const attendanceByUser = {};
@@ -318,10 +318,10 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
       });
 
       // const formatted = userAttendance.map(formatAttendanceRecord); 
-      
+
       return {
         userId: user._id,
-        name: user.name,
+        user: user,
         attendance: formatted.sort((a, b) => new Date(a.date) - new Date(b.date))
       };
     });
