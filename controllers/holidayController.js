@@ -65,7 +65,7 @@ export const getMonthlyHolidays = async (req, res) => {
       new Map(allHolidays.map(h => [h.date.toISOString(), h])).values()
     );
 
-    res.status(200).json({success:true , statusCode:200, data: unique.sort((a, b) => new Date(a.date) - new Date(b.date))});
+    res.status(200).json({success:true , statusCode:200, message: "Holidays fetched successfully", data: unique.sort((a, b) => new Date(a.date) - new Date(b.date))});
   } catch (error) {
     res.status(500).json({success:false , statusCode:500,  message: "Server error", error });
   }
@@ -76,7 +76,7 @@ export const getAllHolidays = async (req, res) => {
     const holidays = await holidayModel.find().sort({ date: 1 });
     if (!holidays || holidays.length === 0) return res.status(404).json({success:false , statusCode:404, message: "No holidays found" });
 
-    res.status(200).json({success:true , statusCode:200,  holidays});
+    res.status(200).json({success:true , statusCode:200, message: "Holidays fetched successfully", data: holidays});
   } catch (error) {
     res.status(500).json({success:false , statusCode:500,  message: "Server error", error });
   }

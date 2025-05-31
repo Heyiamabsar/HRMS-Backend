@@ -129,6 +129,8 @@ export const getTodayAttendance = async (req, res) => {
     res.status(200).json({
       success: true,
       statusCode: 200,
+      message: 'Today\'s attendance fetched successfully',
+      date,
       todayStatus,
       attendance
     });
@@ -136,6 +138,7 @@ export const getTodayAttendance = async (req, res) => {
     res.status(500).json({
       success: false,
       statusCode: 500,
+      message: 'Failed to fetch today\'s attendance',
       error: err.message
     });
   }
@@ -197,12 +200,16 @@ export const getAllUsersTodayAttendance = async (req, res) => {
     res.status(200).json({
       success: true,
       statusCode: 200,
+      message: 'All users\' attendance for today fetched successfully',
+      date,
+      totalUsers: result.length,
       data: result
     });
   } catch (err) {
     res.status(500).json({
       success: false,
       statusCode: 500,
+      message: 'Failed to fetch all users\' attendance for today',
       error: err.message
     });
   }
@@ -260,6 +267,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
+      statusCode: 500,
       message: 'Failed to fetch attendance',
       error: error.message
     });
@@ -328,12 +336,14 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      statusCode: 200,
       message: "All users' attendance history fetched successfully",
       data: result
     });
   } catch (error) {
     res.status(500).json({
       success: false,
+      statusCode: 500,
       message: 'Error fetching full attendance history',
       error: error.message
     });

@@ -13,7 +13,7 @@ export const register = async (req, res) => {
 
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ success : false,  statusCode: 400,error: "Email already exists" });
+      return res.status(400).json({ success : false,  statusCode: 400,message:"Email already exists", error: "Email already exists" });
     }
   
     const user = await userModel.create(req.body);
@@ -23,7 +23,7 @@ export const register = async (req, res) => {
     res.status(201).json({success : true,  statusCode: 201,
       message: 'Users Created successfully', user: userObj});
   } catch (err) {
-    res.status(400).json({success : false,  statusCode: 400, error: err.message });
+    res.status(400).json({success : false,  statusCode: 400, message: 'Failed to create user', error: err.message });
   }
 };
 

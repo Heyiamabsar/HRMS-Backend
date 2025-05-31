@@ -44,11 +44,11 @@ export const updateLeaveStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+      return res.status(400).json({ success: false, statusCode: 400, message: 'Invalid status' });
     }
 
     const leave = await LeaveModel.findById(leaveId);
-    if (!leave) return res.status(404).json({ message: 'Leave not found' });
+    if (!leave) return res.status(404).json({ success: false, statusCode: 404, message: 'Leave not found' });
 
      if (status === 'approved') {
       const existingLeaves = await LeaveModel.find({ 
@@ -57,10 +57,10 @@ export const updateLeaveStatus = async (req, res) => {
       });
 
       const totalLeaveTaken = existingLeaves.reduce((acc, leave) => acc + leave.leaveTaken, 0);
-      const leaveBalance = 20 - totalLeaveTaken;
+      const leaveBalance = 14 - totalLeaveTaken;
 
       if (leaveBalance < totalLeaveTaken) {
-        return res.status(400).json({ message: 'Insufficient leave balance' });
+        return res.status(400).json({ success: false, statusCode: 400, message: 'Insufficient leave balance' });
       }
         leave.leaveBalance = leaveBalance - leave.leaveTaken;
     }
@@ -68,9 +68,9 @@ export const updateLeaveStatus = async (req, res) => {
     leave.status = status;
     await leave.save();
 
-    res.status(200).json({ message: `Leave ${status} successfully`, leave });
+    res.status(200).json({ success: true, statusCode: 200, message: `Leave ${status} successfully`, leave });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update leave status', error: error.message });
+    res.status(500).json({ success: false, statusCode: 500, message: 'Failed to update leave status', error: error.message });
   }
 };
 
@@ -83,11 +83,13 @@ export const getAllLeavesStatus = async (req, res) => {
       .lean();
 
     if (!leaves || leaves.length === 0) {
-      return res.status(404).json({ message: "No leaves found." });
+      return res.status(404).json({ success: false, statusCode: 404, message: "No leaves found." });
     }
 
     res.status(200).json({
       success: true,
+      statusCode: 200,
+      message: "Leaves fetched successfully.",
       count: leaves.length,
       data: leaves
     });
@@ -95,6 +97,7 @@ export const getAllLeavesStatus = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
+      statusCode: 500,
       message: "Internal Server Error. Failed to fetch leaves.",
       error: error.message
     });
@@ -108,7 +111,7 @@ export const getLeavesByUserId = async (req, res) => {
 
     // Validate MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ success: false, message: "Invalid user ID." });
+      return res.status(400).json({ success: false, statusCode: 400, message: "Invalid user ID." });
     }
 
     const leaves = await LeaveModel.find({ employee: userId })
@@ -116,11 +119,12 @@ export const getLeavesByUserId = async (req, res) => {
       .sort({ createdAt: -1 });
 
     if (!leaves || leaves.length === 0) {
-      return res.status(404).json({ success: false, message: "No leaves found for this user." });
+      return res.status(404).json({ success: false, statusCode: 404, message: "No leaves found for this user." });
     }
 
     res.status(200).json({
       success: true,
+      statusCode: 200,
       count: leaves.length,
       message: "Leaves fetched successfully.",
       data: leaves,
@@ -129,6 +133,7 @@ export const getLeavesByUserId = async (req, res) => {
     console.error("Error in getLeavesByUserId:", error);
     res.status(500).json({
       success: false,
+      statusCode: 500,
       message: "Internal Server Error. Failed to fetch leaves by user ID.",
       error: error.message,
     });
@@ -140,17 +145,18 @@ export const getLeavesByUserId = async (req, res) => {
 export const getLoginUserAllLeaves = async (req, res) => {
   try {
     if (!req.user || !req.user?._id) {
-      return res.status(400).json({ message: 'User not authenticated' });
+      return res.status(400).json({ success: false, statusCode: 400, message: 'User not authenticated' });
     }
     console.log("Fetching leaves for user:", req.user?._id);
     const leaves = await LeaveModel.find({ employee: req.user?._id });
 
     if (!leaves || leaves.length === 0) {
-      return res.status(404).json({ message: "No leaves found for this user." });
+      return res.status(404).json({ success: false, statusCode: 404, message: "No leaves found for this user." });
     }
 
     res.status(200).json({
       success: true,
+      statusCode: 200,
       message: "Leaves fetched successfully.",
       count: leaves.length,
       data: leaves
@@ -161,6 +167,7 @@ export const getLoginUserAllLeaves = async (req, res) => {
     console.error("Error in getLoginUserAllLeaves:", error);
     res.status(500).json({
       success: false,
+      statusCode: 500,
       message: "Internal Server Error. Failed to fetch user's leaves.",
       error: error.message
     });

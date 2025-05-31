@@ -8,7 +8,7 @@ export const handleFileUpload = async (req, res) => {
   try {
 
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
+      return res.status(400).json({success: false, statusCode: 400, error: 'No files uploaded' });
     }
 
     const files = req.files.map((file) => ({
@@ -39,9 +39,14 @@ export const handleFileUpload = async (req, res) => {
       $push: { uploads: savedUpload },
     });
 
-    const populatedUpload = await UploadModel.findById(savedUpload._id).populate('user');
+    const populatedUpload = await UploadModel.findById(savedUpload._id).populate({
+      path: 'user',
+      select: '_id name email role' 
+    });
 
     res.status(200).json({
+      success: true,
+      statusCode: 200,
       message: `${req.files.length} Files uploaded successfully`,
       count: req.files.length,
       title: req.body.title,
@@ -49,7 +54,7 @@ export const handleFileUpload = async (req, res) => {
       user: populatedUpload.user
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ success: false, statusCode: 500, error: 'Server error' });
   }
 };
 
@@ -58,9 +63,13 @@ export const handleFileUpload = async (req, res) => {
 export const getAllUploads = async (req, res) => {
   try {
     const uploads = await UploadModel.find().populate('user');
-    res.status(200).json(uploads);
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      uploads
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ success: false, statusCode: 500, error: 'Server error' });
   }
 };
 
@@ -70,22 +79,24 @@ export const getUploadById = async (req, res) => {
 console.log("Get Upload ID:", id);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ error: 'Invalid ID format' });
+    return res.status(400).json({success: false, statusCode: 400, error: 'Invalid ID format' });
   }
 
   try {
     const upload = await UploadModel.findById(id).populate('userId');
     if (!upload) {
-      return res.status(404).json({ error: 'Upload not found' });
+      return res.status(404).json({ success: false, statusCode: 404, error: 'Upload not found' });
     }
 
     res.status(200).json({
       ...upload.toObject(),
+      success: true,
+      statusCode: 200,
       user: upload.userId
     });
   } catch (error) {
     console.error("Get Upload Error:", error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ success: false, statusCode: 500, error: 'Server error' });
   }
 };
 
@@ -94,18 +105,18 @@ export const deleteUpload = async (req, res) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ error: 'Invalid ID format' });
+    return res.status(400).json({ success: false, statusCode: 400, error: 'Invalid ID format' });
   }
 
   try {
     const upload = await UploadModel.findByIdAndDelete(id);
     if (!upload) {
-      return res.status(404).json({ error: 'Upload not found' });
+      return res.status(404).json({ success: false, statusCode: 404, error: 'Upload not found' });
     }
 
-    res.status(200).json({ message: 'Upload deleted successfully' });
+    res.status(200).json({ success: true, statusCode: 200, message: 'Upload deleted successfully' });
   } catch (error) {
     console.error("Delete Upload Error:", error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ success: false, statusCode: 500, error: 'Server error' });
   }
 };
