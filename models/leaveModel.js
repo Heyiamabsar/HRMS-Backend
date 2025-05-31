@@ -14,9 +14,9 @@ const leaveSchema = new mongoose.Schema({
   toDate: { type: Date, required: true },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
 
-  maximumLeave: { type: Number, required: true ,default: 20 },
+  maximumLeave: { type: Number, required: true ,default: 14 },
   leaveTaken: { type: Number, required: true, default: 0 },
-  leaveBalance: { type: Number, required: true  , default: 20 },
+  leaveBalance: { type: Number, required: true  , default: 14 },
 
   appliedAt: { type: Date, default: Date.now },
 }, { timestamps: true });

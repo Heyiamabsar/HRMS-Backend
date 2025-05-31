@@ -4,11 +4,13 @@ import dotenv from 'dotenv';
 import userModel from '../models/userModel.js';
 dotenv.config();
 
+// testController
+
 export const register = async (req, res) => {
   try {
 
     const { email } = req.body;
-     
+
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success : false,  statusCode: 400,error: "Email already exists" });

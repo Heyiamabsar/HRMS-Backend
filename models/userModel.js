@@ -14,12 +14,17 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Leave'
   }],
-  timeZone: { type: String, default: 'Asia/Kolkata' },
-  first_name: { type: String,required: [true, 'First name is required'],trim: true, minlength: [2, 'First name must be at least 2 characters'], maxlength: [50, 'First name must be less than 50 characters'] },
+  timeZone: { type: String },
+  first_name: { type: String,required: [true, 'First name is required'],
+    trim: true, minlength: [2, 'First name must be at least 2 characters'], 
+    maxlength: [50, 'First name must be less than 50 characters'] },
   last_name: { type: String, trim: true, maxlength: [50, 'Last name must be less than 50 characters'] },
-  phone: { type: Number, required: [true, 'Phone number is required'], minlength: [10, 'Phone number must be 10 digits'], maxlength: [10, 'Phone number must be 10 digits'] },
-  email: { type: String, unique: true, trim: true, lowercase: true, required: [true, 'Email is required'], match: [/\S+@\S+\.\S+/, 'Email format is invalid'] },
-  password: { type: String, required: [true, 'Password is required'], minlength: [6, 'Password must be at least 6 characters'] },
+  phone: { type: Number, required: [true, 'Phone number is required'], 
+    minlength: [10, 'Phone number must be 10 digits'], maxlength: [10, 'Phone number must be 10 digits'] },
+  email: { type: String, unique: true, trim: true, lowercase: true, 
+    required: [true, 'Email is required'], match: [/\S+@\S+\.\S+/, 'Email format is invalid'] },
+  password: { type: String, required: [true, 'Password is required'], 
+    minlength: [6, 'Password must be at least 6 characters'] },
   department: { type: String, required: [true, 'Department is required'] },
   userId: { type: String, required: [true, 'User ID is required'] },
   address: {
@@ -28,7 +33,8 @@ const userSchema = new mongoose.Schema({
     city: { type: String, required: [true, 'City is required'] },
     village: { type: String, required: [true, 'Village is required'] },
     address_line: { type: String, required: [true, 'Address line is required'] },
-    pincode: { type: String, required: [true, 'Pincode is required'], match: [/^[0-9]{6}$/, 'Pincode must be a 6-digit number'] }
+    pincode: { type: String, required: [true, 'Pincode is required'], 
+      match: [/^[0-9]{6}$/, 'Pincode must be a 6-digit number'] }
   },
   designation: {
     type: String,
