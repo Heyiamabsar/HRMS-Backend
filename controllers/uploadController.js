@@ -6,7 +6,7 @@ import userModel from "../models/userModel.js";
 
 export const handleFileUpload = async (req, res) => {
   try {
-console.log("File Upload Request:", req.body);
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
@@ -18,17 +18,24 @@ console.log("File Upload Request:", req.body);
       mimetype: file.mimetype,
       size: file.size,
     }));
-    
+    const user = req.user
+  ? {
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+    }
+  : null;
 
     const newUpload = new UploadModel({
       title: req.body.title || 'Untitled',
       files,
-      user: req.user._id ? req.user._id : null,
+      user,
     });
 
     const savedUpload = await newUpload.save();
 
-    await userModel.findByIdAndUpdate(req.body.userId, {
+    await userModel.findByIdAndUpdate(req.user._id, {
       $push: { uploads: savedUpload },
     });
 
