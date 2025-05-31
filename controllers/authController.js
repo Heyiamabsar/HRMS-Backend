@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
+import requestIp from 'request-ip';
+import geoip from 'geoip-lite';
 import userModel from '../models/userModel.js';
 dotenv.config();
 
@@ -31,16 +33,28 @@ export const login = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await userModel.findOne({ email }).select('-password');
-  
+
     if (!user) {
       return res.status(404).json({ success: false, statusCode: 404, message: 'User not found' });
     }
-   
     // Generate JWT token
     const token = jwt.sign({ _id: user._id, role: user.role}, process.env.JWT_SECRET,{ expiresIn: '9h' }) ;
+
+      const ip = requestIp.getClientIp(req);
+      const geo =geoip.lookup(ip && ip !== '::1' ? ip : '49.37.210.1');
+      const loginTime = new Date();
+      const timezone = geo?.timezone || 'Timezone not found';
+
+      user.timeZone= timezone;
+      user.lastLogin = loginTime;
+
+      await user.save();
+
+
     res.json({
       success : true,  
       statusCode: 200,
+      message: 'Login successful',
        token,
        user,
        });

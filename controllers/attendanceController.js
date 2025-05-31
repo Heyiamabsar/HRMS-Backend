@@ -146,6 +146,7 @@ export const getTodayAttendance = async (req, res) => {
 
 // Get all users' attendance for today
 export const getAllUsersTodayAttendance = async (req, res) => {
+
   try {
     const date = moment().format('YYYY-MM-DD');
     const userId = req.user._id;
@@ -213,7 +214,92 @@ export const getAllUsersTodayAttendance = async (req, res) => {
       error: err.message
     });
   }
+}
+
+// Get single user's attendance for a week
+export const getSingleUserWeeklyAttendance = async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.body;
+    const userId = req.user._id;
+    console.log("User ID:", req.user);
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        statusCode: 404,
+        message: 'User not found'
+      });
+    }
+
+    const userTimeZone = user.timeZone || 'UTC';
+
+   if (!fromDate || !toDate) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        message: 'Please provide both fromDate and toDate'
+      });
+    }
+    // Convert received dates to correct timezone format
+    const startDate = moment.tz(fromDate, userTimeZone).startOf('day').toDate();
+    const endDate = moment.tz(toDate, userTimeZone).endOf('day').toDate();
+
+    const records = await AttendanceModel.find({
+      userId,
+      date: { $gte: startDate, $lte: endDate }
+    }).sort({ date: -1 });
+
+    console.log('Fetched Records:', records);
+    const formattedRecords = records.map(record => {
+      const inTime = record.inTime ? moment(record.inTime).tz(userTimeZone) : null;
+      const outTime = record.outTime ? moment(record.outTime).tz(userTimeZone) : null;
+      const cutoffTime = moment(record.date).tz(userTimeZone).hour(9).minute(15); // 9:15 AM
+
+      let duration = null;
+      let status = 'Absent';
+
+      if (inTime && outTime) {
+        const diff = moment.duration(outTime.diff(inTime));
+        const hours = diff.asHours();
+        duration = `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
+
+        if (hours >= 9 && inTime.isSameOrBefore(cutoffTime)) {
+          status = 'Present';
+        }else{
+          status = 'Half Day';
+        } 
+        // else if (hours > 5) {
+        //   status = 'Half Day';
+        // }
+      }
+
+      return {
+        date: moment(record.date).tz(userTimeZone).format('YYYY-MM-DD'),
+        inTime: inTime ? inTime.format('hh:mm A') : null,
+        outTime: outTime ? outTime.format('hh:mm A') : null,
+        duration,
+        status
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Weekly attendance fetched successfully',
+      data: {
+        totalDays: formattedRecords.length,
+        records: formattedRecords
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: 'Failed to fetch weekly attendance',
+      error: error.message
+    });
+  }
 };
+
 
 // Get single user's full attendance history
 export const getSingleUserFullAttendanceHistory = async (req, res) => {

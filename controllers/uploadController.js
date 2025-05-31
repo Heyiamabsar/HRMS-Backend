@@ -45,6 +45,8 @@ export const handleFileUpload = async (req, res) => {
     });
 
     res.status(200).json({
+      _id: savedUpload._id,
+      title: savedUpload.title,
       success: true,
       statusCode: 200,
       message: `${req.files.length} Files uploaded successfully`,
@@ -54,7 +56,7 @@ export const handleFileUpload = async (req, res) => {
       user: populatedUpload.user
     });
   } catch (error) {
-    res.status(500).json({ success: false, statusCode: 500, error: 'Server error' });
+    res.status(500).json({ success: false, statusCode: 500, message: 'Server error', error: 'Server error' });
   }
 };
 

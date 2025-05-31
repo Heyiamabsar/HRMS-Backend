@@ -4,12 +4,10 @@ const attendanceSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
   },
   User: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
   },
   date: {
     type: String, // Store date as 'YYYY-MM-DD'
