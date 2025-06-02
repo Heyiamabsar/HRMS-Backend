@@ -4,8 +4,13 @@ import mongoose from 'mongoose';
 const leaveSchema = new mongoose.Schema({
   employee: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+    ref: 'User'
+
+  },
+  Attendance:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Attendance'
+
   },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   reason: { type: String, required: true },

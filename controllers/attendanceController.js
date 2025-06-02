@@ -4,6 +4,7 @@ import AttendanceModel from '../models/attendanceModule.js';
 import userModel from '../models/userModel.js';
 import holidayModel from '../models/holidayModule.js';
 import { formatAttendanceRecord } from '../utils/attendanceUtils.js';
+import LeaveModel from '../models/leaveModel.js';
 
 
 // Punch IN
@@ -20,11 +21,19 @@ export const markInTime = async (req, res) => {
       return res.status(400).json({ success: false, statusCode: 400, message: 'Already punched in today' });
     }
 
+    let todayStatus ;
    const inTime = moment().tz(userTimeZone).toDate();
+    const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A').tz(userTimeZone);
+     if (moment(inTime).isSameOrBefore(nineFifteen)) {
+        todayStatus = 'Present';
+        
+      }else {
+        todayStatus = 'Half Day';
+      }
 
     const attendance = await AttendanceModel.findOneAndUpdate(
       { userId, date },
-      { $set: { inTime } },
+      { $set: { inTime, status: todayStatus } },
       { upsert: true, new: true }
     );
 
@@ -49,6 +58,12 @@ export const markOutTime = async (req, res) => {
 
     const attendance = await AttendanceModel.findOne({ userId, date });
 
+     const inTime = moment(attendance.inTime).tz(userTimeZone);
+     
+      const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A').tz(userTimeZone);
+    
+
+
     if (!attendance || !attendance.inTime) {
       return res.status(400).json({ success: false, statusCode: 400, message: 'You must punch in first' });
     }
@@ -70,13 +85,34 @@ export const markOutTime = async (req, res) => {
     attendance.outTime = outTime;
     attendance.duration = duration;
 
-    await attendance.save();
+    let todayStatus ;
+      if (inTime.isSameOrBefore(nineFifteen)) {
+        todayStatus = 'Present';
+      } else if (outTime) {
+        // const duration = moment.duration(outTime.diff(inTime)).asHours();
+        const duration = moment.duration(moment(outTime).diff(inTime)).asHours();
+
+        // duration > 5 && duration < 9
+        if (duration < 9) {
+          todayStatus = 'Half Day';
+        }
+      } else {
+        todayStatus = 'Half Day';
+      }
+      
+    const attendanceStatus = await AttendanceModel.findOneAndUpdate(
+      { userId, date },
+      { $set: {status: todayStatus } },
+      { upsert: true, new: true }
+    );
+
+    await attendanceStatus.save();
 
     res.status(200).json({ 
         success: true,
         statusCode: 200,
         message: 'Punched OUT successfully',
-        attendance
+        attendanceStatus
     });
   } catch (err) {
     res.status(500).json({ success: false, statusCode: 500, error: err.message });
@@ -87,51 +123,32 @@ export const markOutTime = async (req, res) => {
 export const getTodayAttendance = async (req, res) => {
   try {
     const userId = req.user._id;
-    const userTimeZone = req.user.timeZone || 'UTC';
-    const date = moment().tz(userTimeZone).format('YYYY-MM-DD');
-
-    const attendance = await AttendanceModel.findOne({ userId, date });
-
-    let todayStatus = 'Absent';
-
+    const date = moment().format('YYYY-MM-DD');
     const holiday = await holidayModel.findOne({ date });
 
     if (holiday) {
-      todayStatus = 'Holiday';
-    } else  if (attendance && attendance.inTime) {
-    const inTime = moment(attendance.inTime).tz(userTimeZone);
-      const outTime = attendance.outTime ? moment(attendance.outTime).tz(userTimeZone) : null;
-      const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A').tz(userTimeZone);
-
-      if (inTime.isSameOrBefore(nineFifteen)) {
-        todayStatus = 'Present';
-      } else if (outTime) {
-        const duration = moment.duration(outTime.diff(inTime)).asHours();
-        // duration > 5 && duration < 9
-        if (duration < 9) {
-          todayStatus = 'Half Day';
+      return res.status(200).json({
+        success: true,
+        statusCode: 200,
+        message: 'Today is a holiday',
+        date,
+        attendance: {
+          userId,
+          date,
+          inTime: null,
+          outTime: null,
+          status: 'Holiday'
         }
-      } else {
-        todayStatus = 'Half Day';
-      }
-
-      // if (inTime.isSameOrBefore(nineFifteen)) {
-      //   todayStatus = 'Present';
-      // } else if (outTime) {
-      //   const duration = moment.duration(outTime.diff(inTime)).asHours();
-      //   // duration > 5 && duration < 9
-      //   if (duration < 9) {
-      //     todayStatus = 'Half Day';
-      //   }
-      // }
+      });
     }
+    const attendance = await AttendanceModel.findOne({ date }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1 ,userId: 1});
+    console.log("Today's Attendance:", attendance);
 
     res.status(200).json({
       success: true,
       statusCode: 200,
       message: 'Today\'s attendance fetched successfully',
       date,
-      todayStatus,
       attendance
     });
   } catch (err) {
@@ -142,59 +159,37 @@ export const getTodayAttendance = async (req, res) => {
       error: err.message
     });
   }
-};
+}
 
 // Get all users' attendance for today
 export const getAllUsersTodayAttendance = async (req, res) => {
 
   try {
     const date = moment().format('YYYY-MM-DD');
-    const userId = req.user._id;
-    // const user = await userModel.findById(userId);
-    const userTimeZone = req.user.timeZone || 'UTC';
 
-    const attendances = await AttendanceModel.find({ date }).populate('userId', 'name email');
-
-    const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A').tz(userTimeZone);
-    const holiday = await holidayModel.findOne({ date });
+    const attendances = await AttendanceModel.find({ date }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1 ,userId: 1});
 
     const result = await Promise.all(attendances.map(async (attendance) => {
-
-          let todayStatus = 'Absent';
-
-            if (holiday) {
-              todayStatus = 'Holiday';
-            } else if (attendance.inTime) {
-           const inTime = moment(attendance.inTime).tz(userTimeZone);
-           const outTime = attendance.outTime ? moment(attendance.outTime).tz(userTimeZone) : null;
-
-          if (inTime.isSameOrBefore(nineFifteen)) {
-            todayStatus = 'Present';
-          } else if (outTime) {
-            const duration = moment.duration(outTime.diff(inTime)).asHours();
-            if (duration < 9) {
-              todayStatus = 'Half Day';
-            }
-          } else {
-            todayStatus = 'Half Day';
-          }
-
-            // if (inTime.isSameOrBefore(nineFifteen)) {
-            //   todayStatus = 'Present';
-            // } else if (outTime) {
-            //   const duration = moment.duration(outTime.diff(inTime)).asHours();
-            //   if (duration < 9) {
-            //     todayStatus = 'Half Day';
-            //   }
-            // }
-          }
+            const user= await userModel.findById(attendance.User);
 
           return {
-            user: attendance.userId,
-            date: attendance.date,
-            inTime: attendance.inTime,
-            outTime: attendance.outTime,
-            todayStatus,
+            user: attendance.userId ? {
+              userId: attendance.userId.userId,
+              firstName: attendance.userId.first_name,
+              lastName: attendance.userId.last_name,
+              email: attendance.userId.email
+            } : {
+               userId: user._id,
+              firstName: user.first_name,
+              lastName: user.last_name,
+              email: user.email
+
+            },
+            date: attendance.date || null,
+            inTime: attendance.inTime || null,
+            outTime: attendance.outTime || null,
+            duration: attendance.duration || null,
+            status : attendance.status || null
           };
         }));
 
@@ -216,138 +211,31 @@ export const getAllUsersTodayAttendance = async (req, res) => {
   }
 }
 
-// Get single user's attendance for a week
-export const getSingleUserWeeklyAttendance = async (req, res) => {
-  try {
-    const { fromDate, toDate } = req.body;
-    const userId = req.user._id;
-    console.log("User ID:", req.user);
-    const user = await userModel.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        statusCode: 404,
-        message: 'User not found'
-      });
-    }
-
-    const userTimeZone = user.timeZone || 'UTC';
-
-   if (!fromDate || !toDate) {
-      return res.status(400).json({
-        success: false,
-        statusCode: 400,
-        message: 'Please provide both fromDate and toDate'
-      });
-    }
-    // Convert received dates to correct timezone format
-    const startDate = moment.tz(fromDate, userTimeZone).startOf('day').toDate();
-    const endDate = moment.tz(toDate, userTimeZone).endOf('day').toDate();
-
-    const records = await AttendanceModel.find({
-      userId,
-      date: { $gte: startDate, $lte: endDate }
-    }).sort({ date: -1 });
-
-    console.log('Fetched Records:', records);
-    const formattedRecords = records.map(record => {
-      const inTime = record.inTime ? moment(record.inTime).tz(userTimeZone) : null;
-      const outTime = record.outTime ? moment(record.outTime).tz(userTimeZone) : null;
-      const cutoffTime = moment(record.date).tz(userTimeZone).hour(9).minute(15); // 9:15 AM
-
-      let duration = null;
-      let status = 'Absent';
-
-      if (inTime && outTime) {
-        const diff = moment.duration(outTime.diff(inTime));
-        const hours = diff.asHours();
-        duration = `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
-
-        if (hours >= 9 && inTime.isSameOrBefore(cutoffTime)) {
-          status = 'Present';
-        }else{
-          status = 'Half Day';
-        } 
-        // else if (hours > 5) {
-        //   status = 'Half Day';
-        // }
-      }
-
-      return {
-        date: moment(record.date).tz(userTimeZone).format('YYYY-MM-DD'),
-        inTime: inTime ? inTime.format('hh:mm A') : null,
-        outTime: outTime ? outTime.format('hh:mm A') : null,
-        duration,
-        status
-      };
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Weekly attendance fetched successfully',
-      data: {
-        totalDays: formattedRecords.length,
-        records: formattedRecords
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      statusCode: 500,
-      message: 'Failed to fetch weekly attendance',
-      error: error.message
-    });
-  }
-};
-
 
 // Get single user's full attendance history
 export const getSingleUserFullAttendanceHistory = async (req, res) => {
   try {
 
-    const userId = req.user._id;
-    const userTimeZone = req.user.timeZone || 'UTC';
-    const records = await AttendanceModel.find({ userId }).sort({ date: -1 });
+    const userId = req.user._id;  
+    // const records = await AttendanceModel.find({ userId }).populate('userId', 'first_name last_name email status userId').sort({ date: -1 });
+console.log("Fetching attendance for user:", userId);
+    // 1. Fetch Attendance Records
+    const attendanceRecords = await AttendanceModel.find({ userId })
+      .populate('userId', 'first_name last_name email status userId');
 
-      //  const formattedRecords = records.map(formatAttendanceRecord);
+    // 2. Fetch Leave Records
+    const leaveRecords = await LeaveModel.find({ userId })
+      .populate('Attendance');
 
-    const formattedRecords = records.map(record => {
-      const inTime = record.inTime ? moment(record.inTime).tz(userTimeZone) : null;
-      const outTime = record.outTime ? moment(record.outTime).tz(userTimeZone) : null;
-      const cutoffTime = moment(record.date).hour(9).minute(15).tz(userTimeZone); // 9:15 AM
+      console.log("attendanceRecords", attendanceRecords);
 
-      let duration = null;
-      let status = 'Absent';
-
-      if (inTime && outTime) {
-        const diff = moment.duration(outTime.diff(inTime));
-        
-        const hours = diff.asHours();
-        duration = `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
-
-        if (hours >= 9 && inTime.isSameOrBefore(cutoffTime)) {
-          status = 'Present';
-        } 
-        // else if (hours > 5) {
-        //   status = 'Half Day';
-        // }
-      }
-
-      return {
-        date: moment(record.date).format('YYYY-MM-DD'),
-        inTime: inTime ? inTime.format('hh:mm A') : null,
-        outTime: outTime ? outTime.format('hh:mm A') : null,
-        duration,
-        status
-      };
-    });
 
     res.status(200).json({
       success: true,
       message: 'Attendance fetched successfully',
       data: {
-        totalDays: formattedRecords.length,
-        records: formattedRecords
+        attendance: attendanceRecords,
+        leaves: leaveRecords
       }
     });
   } catch (error) {
@@ -362,78 +250,99 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 
 // Get all users' full attendance history
 // Admin or HR only
+// export const getAllUsersFullAttendanceHistory = async (req, res) => {
+//   try {
+
+//     const records = await AttendanceModel.find();
+//     const users = await userModel.find({});
+//     console.log('Fetched Records:', users);
+//     // const userTimeZone = req.user.timeZone || 'UTC';
+// // attendanceByUser with user name and email
+//     const attendanceByUser = {};
+//     records.forEach(record => {
+
+//  records.forEach(record => {
+//   const user = users.find(u => u._id === record.userId);
+//   if (user) {
+//     record.userName = `${user.first_name} ${user.last_name}`;
+//     record.userEmail = user.email;
+//   }
+// });
+    
+
+//       const userId = record.userId;
+
+//       if (!attendanceByUser[userId]) attendanceByUser[userId] = [];
+//       attendanceByUser[userId].push(record);
+      
+
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       statusCode: 200,
+//       message: "All users' attendance history fetched successfully",
+//       data: attendanceByUser,
+      
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       statusCode: 500,
+//       message: 'Error fetching full attendance history',
+//       error: error.message
+//     });
+//   }
+// };
+
+
 export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
-
     const records = await AttendanceModel.find();
-    const users = await userModel.find({}, '-attendance -leaves');
-    const userTimeZone = req.user.timeZone || 'UTC';
+    const users = await userModel.find({});
 
     const attendanceByUser = {};
-    records.forEach(record => {
-      const userId = record.userId;
-      if (!attendanceByUser[userId]) attendanceByUser[userId] = [];
-      attendanceByUser[userId].push(record);
-    });
 
-    const result = users.map(user => {
-      const userAttendance = attendanceByUser[user._id] || [];
+    records.forEach(recordDoc => {
+      if (!recordDoc.userId) return;
 
-      const formatted = userAttendance.map(record => {
-        const inTime = record.inTime ? moment(record.inTime).tz(userTimeZone) : null;
-        const outTime = record.outTime ? moment(record.outTime).tz(userTimeZone) : null;
-        const cutoffTime = moment(record.date).hour(9).minute(15).tz(userTimeZone); // 9:15 AM
-        let duration = null;
-        let status = 'Absent';
+      const user = users.find(u => u._id?.toString() === recordDoc.userId?.toString());
+      if (!user) return;
 
-        if (inTime && outTime) {
-          const diff = moment.duration(outTime.diff(inTime));
-          const hours = diff.asHours();
-          duration = `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
-          // && inTime.isSameOrBefore(cutoffTime)
-          if (hours >= 9 ) {
-            status = 'Present';
-          } else {
-            status = 'Half Day';
-          }
-        }
+      const record = recordDoc.toObject();
+      const userIdStr = user._id.toString();
 
-        // if (inTime && inTime.isAfter(cutoffTime)) {
-        //   status = 'Half Day';
-        // }
-
-        return {
-          date: moment(record.date).format('YYYY-MM-DD'),
-          inTime: inTime ? inTime.format('hh:mm A') : null,
-          outTime: outTime ? outTime.format('hh:mm A') : null,
-          duration,
-          status
+      if (!attendanceByUser[userIdStr]) {
+        attendanceByUser[userIdStr] = {
+          userId: userIdStr,
+          userName: `${user.first_name} ${user.last_name}`,
+          userEmail: user.email,
+          userPhone: user.phone,
+          attendanceHistory: [],
         };
-      });
+      }
 
-      // const formatted = userAttendance.map(formatAttendanceRecord); 
-
-      return {
-        userId: user._id,
-        user: user,
-        attendance: formatted.sort((a, b) => new Date(a.date) - new Date(b.date))
-      };
+      attendanceByUser[userIdStr].attendanceHistory.push(record);
     });
 
     res.status(200).json({
       success: true,
       statusCode: 200,
       message: "All users' attendance history fetched successfully",
-      data: result
+      data: Object.values(attendanceByUser), // Convert to array if needed
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       statusCode: 500,
       message: 'Error fetching full attendance history',
-      error: error.message
+      error: error.message,
     });
   }
 };
+
+
+
+
 
 

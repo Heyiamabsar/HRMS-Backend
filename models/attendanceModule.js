@@ -21,7 +21,12 @@ const attendanceSchema = new mongoose.Schema({
   },
   duration: {
     type: String, // "HH:mm:ss"
-  }
+  },
+  status: {
+    type: String,
+    enum: ['Present', 'Absent', 'Leave', 'Half Day'],
+    default: 'Absent'
+  },
 }, { timestamps: true });
 
 attendanceSchema.index({ userId: 1, date: 1 }, { unique: true });
