@@ -57,13 +57,9 @@ export const markOutTime = async (req, res) => {
     const date = moment().tz(userTimeZone).format('YYYY-MM-DD');
 
     const attendance = await AttendanceModel.findOne({ userId, date });
-
      const inTime = moment(attendance.inTime).tz(userTimeZone);
-     
       const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A').tz(userTimeZone);
-    
-
-
+  
     if (!attendance || !attendance.inTime) {
       return res.status(400).json({ success: false, statusCode: 400, message: 'You must punch in first' });
     }
@@ -84,6 +80,7 @@ export const markOutTime = async (req, res) => {
 
     attendance.outTime = outTime;
     attendance.duration = duration;
+    await attendance.save();
 
     let todayStatus ;
       if (inTime.isSameOrBefore(nineFifteen)) {
@@ -167,7 +164,8 @@ export const getAllUsersTodayAttendance = async (req, res) => {
   try {
     const date = moment().format('YYYY-MM-DD');
 
-    const attendances = await AttendanceModel.find({ date }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1 ,userId: 1});
+    const attendances = await AttendanceModel.find({ date }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1, outTime:1 ,userId: 1});
+console.log('Fetched Attendances:', attendances);
 
     const result = await Promise.all(attendances.map(async (attendance) => {
             const user= await userModel.findById(attendance.User);
