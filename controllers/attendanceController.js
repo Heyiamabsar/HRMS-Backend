@@ -120,6 +120,7 @@ export const markOutTime = async (req, res) => {
 export const getTodayAttendance = async (req, res) => {
   try {
     const userId = req.user._id;
+    console.log("Fetching today's attendance for user:", userId);
     const date = moment().format('YYYY-MM-DD');
     const holiday = await holidayModel.findOne({ date });
 
@@ -138,7 +139,7 @@ export const getTodayAttendance = async (req, res) => {
         }
       });
     }
-    const attendance = await AttendanceModel.findOne({ date }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1 ,userId: 1});
+    const attendance = await AttendanceModel.findOne({ date, userId  }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1 });
     console.log("Today's Attendance:", attendance);
 
     res.status(200).json({
@@ -164,12 +165,12 @@ export const getAllUsersTodayAttendance = async (req, res) => {
   try {
     const date = moment().format('YYYY-MM-DD');
 
-    const attendances = await AttendanceModel.find({ date }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1, outTime:1 ,userId: 1});
-console.log('Fetched Attendances:', attendances);
+    const attendances = await AttendanceModel.find({ date }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1, outTime:1 });
+console.log('Today Attendances:', attendances);
 
     const result = await Promise.all(attendances.map(async (attendance) => {
             const user= await userModel.findById(attendance.User);
-
+//  console.log('attendance:', attendance.userId);
           return {
             user: attendance.userId ? {
               userId: attendance.userId.userId,
@@ -190,7 +191,7 @@ console.log('Fetched Attendances:', attendances);
             status : attendance.status || null
           };
         }));
-
+         console.log("result", result)
     res.status(200).json({
       success: true,
       statusCode: 200,
