@@ -139,7 +139,7 @@ export const getTodayAttendance = async (req, res) => {
         }
       });
     }
-    const attendance = await AttendanceModel.findOne({ date, userId  }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1 });
+    const attendance = await AttendanceModel.findOne({ date, userId  }).populate('userId', 'first_name last_name email status userId');
     console.log("Today's Attendance:", attendance);
 
     res.status(200).json({
@@ -166,22 +166,21 @@ export const getAllUsersTodayAttendance = async (req, res) => {
     const date = moment().format('YYYY-MM-DD');
 
     const attendances = await AttendanceModel.find({ date }).populate('userId', 'first_name last_name email status userId').sort({ inTime: 1, outTime:1 });
-console.log('Today Attendances:', attendances);
 
     const result = await Promise.all(attendances.map(async (attendance) => {
             const user= await userModel.findById(attendance.User);
-//  console.log('attendance:', attendance.userId);
+
           return {
             user: attendance.userId ? {
-              userId: attendance.userId.userId,
-              firstName: attendance.userId.first_name,
-              lastName: attendance.userId.last_name,
-              email: attendance.userId.email
+              userId: attendance.userId.userId || null,
+              firstName: attendance.userId.first_name || null,
+              lastName: attendance.userId.last_name || null,
+              email: attendance.userId.email || null
             } : {
-               userId: user._id,
-              firstName: user.first_name,
-              lastName: user.last_name,
-              email: user.email
+               userId: user._id  || null,
+              firstName: user.first_name || null,
+              lastName: user.last_name || null,
+              email: user.email || null
 
             },
             date: attendance.date || null,
@@ -191,7 +190,7 @@ console.log('Today Attendances:', attendances);
             status : attendance.status || null
           };
         }));
-         console.log("result", result)
+
     res.status(200).json({
       success: true,
       statusCode: 200,
@@ -216,8 +215,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
   try {
 
     const userId = req.user._id;  
-    // const records = await AttendanceModel.find({ userId }).populate('userId', 'first_name last_name email status userId').sort({ date: -1 });
-console.log("Fetching attendance for user:", userId);
+
     // 1. Fetch Attendance Records
     const attendanceRecords = await AttendanceModel.find({ userId })
       .populate('userId', 'first_name last_name email status userId');
@@ -307,7 +305,7 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
 
       const user = users.find(u => u._id?.toString() === recordDoc.userId?.toString());
       if (!user) return;
-
+    
       const record = recordDoc.toObject();
       const userIdStr = user._id.toString();
 

@@ -10,7 +10,7 @@ export const addCustomHoliday = async (req, res) => {
     if (!date || !reason) return res.status(400).json({success:false ,statusCode:400, message: "Date and reason are required" });
     if (!moment(date, "YYYY-MM-DD", true).isValid()) return res.status(400).json({success:false ,statusCode:400, message: "Invalid date format" });
     if (moment(date).isBefore(moment().startOf("day"))) return res.status(400).json({success:false ,statusCode:400, message: "Cannot add past holidays" });
-    if (moment(date).day() === 0) return res.status(400).json({success:false ,statusCode:400, message: "Cannot add holidays on Sundays" });
+    // if (moment(date).day() === 0) return res.status(400).json({success:false ,statusCode:400, message: "Cannot add holidays on Sundays" });
 
     const holidayDate = moment(date).startOf("day");
     

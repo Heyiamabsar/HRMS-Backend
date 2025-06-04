@@ -8,9 +8,10 @@ import moment from 'moment-timezone';
 export const applyLeave= async (req, res) => {
     try {
         const { leaveType, fromDate, toDate, reason } = req.body;
+        console.log("Request body",req.body)
 
         const leaveDays = Math.ceil((new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24)) + 1;
-    
+    console.log("leaves Days",leaveDays)
       const leave = await LeaveModel.create({
           employee: req.user?._id,
           userId: req.user?._id,
@@ -23,6 +24,7 @@ export const applyLeave= async (req, res) => {
           status: 'pending' // default status
         });
 
+        console.log('leave',leave)
 
     res.status(201).json({ 
         success:true,
@@ -43,11 +45,15 @@ export const updateLeaveStatus = async (req, res) => {
     const leaveId = req.params.id;
     const { status, fromDate, toDate } = req.body;
 
+    console.log('Request Body updateApi',req.body)
+    console.log('leaveId',leaveId)
+
     if (!['approved', 'rejected'].includes(status)) {
       return res.status(400).json({ success: false, statusCode: 400, message: 'Invalid status' });
     }
 
     const leave = await LeaveModel.findById(leaveId);
+console.log('leave update Api',leave)
     if (!leave) {
       return res.status(404).json({ success: false, statusCode: 404, message: 'Leave not found' });
     }
@@ -58,9 +64,13 @@ export const updateLeaveStatus = async (req, res) => {
         employee: leave.employee,
         status: 'approved'
       });
+      console.log("existingLeaves",existingLeaves)
 
       const totalLeaveTaken = existingLeaves.reduce((acc, leave) => acc + leave.leaveTaken, 0);
       const leaveBalance = 14 - totalLeaveTaken;
+      
+     console.log('totalLeaveTaken',totalLeaveTaken)
+     console.log('leaveBalance',leaveBalance)
 
       if (leaveBalance < leave.leaveTaken) {
         return res.status(400).json({
@@ -94,11 +104,12 @@ export const updateLeaveStatus = async (req, res) => {
       //     console.log(`Marked Leave on ${formattedDate}`);
       //   }
       // }
-
       const dates = [];
+      console.log('dates before',dates)
       for (let date = moment(fromDate); date.isSameOrBefore(toDate); date.add(1, 'days')) {
   dates.push(date.format('YYYY-MM-DD'));
 }
+      console.log('dates After',dates)
 
 const operations = dates.map(date => ({
   updateOne: {
@@ -107,6 +118,8 @@ const operations = dates.map(date => ({
     upsert: true // If not found, insert it
   }
 }));
+console.log("operations",operations)
+
 await AttendanceModel.bulkWrite(operations);
 
       leave.leaveBalance = leaveBalance - leave.leaveTaken;
