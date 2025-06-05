@@ -36,6 +36,14 @@ const userSchema = new mongoose.Schema({
     pincode: { type: String, required: [true, 'Pincode is required'], 
       match: [/^[0-9]{6}$/, 'Pincode must be a 6-digit number'] }
   },
+   sickLeaves: {
+    type: Number,
+    default: 0,
+  },
+  unpaidLeaves: {
+    type: Number,
+    default: 0,
+  },
   designation: {
     type: String,
     required: [true, 'Designation is required']

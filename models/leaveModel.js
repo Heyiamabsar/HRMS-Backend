@@ -14,10 +14,12 @@ const leaveSchema = new mongoose.Schema({
   },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   reason: { type: String, required: true },
-  leaveType: { type: String, enum: ['vacation', 'sick', 'casual', 'LOP'], required: true },
   fromDate: { type: Date, required: true },
   toDate: { type: Date, required: true },
+  leaveType: { type: String, enum: ['vacation', 'sick', 'casual', 'LOP','unpaid'], required: true },
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  sickLeave: { type: Number,  default: 0},
+  unPaidLeave: { type: Number,  default: 0},
 
   maximumLeave: { type: Number, required: true ,default: 14 },
   leaveTaken: { type: Number, required: true, default: 0 },
