@@ -312,6 +312,7 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
       if (!attendanceByUser[userIdStr]) {
         attendanceByUser[userIdStr] = {
           userId: userIdStr,
+          empId: user?.userId,
           userName: `${user.first_name} ${user.last_name}`,
           userEmail: user.email,
           userPhone: user.phone,

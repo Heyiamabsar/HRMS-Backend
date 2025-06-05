@@ -10,6 +10,7 @@ import uploadRouter from "./routes/uploadRoutes.js";
 import leaveRouter from "./routes/leaveRoutes.js";
 import attendanceRouter from "./routes/attendanceRoutes.js";
 import holidayRouter from "./routes/holidayRoutes.js";
+import payrollRouter from "./routes/payrollRoutes.js";
 
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.use(cors({
 }));
 
 app.use("/api/auth", authRoutes);
+app.use("/api/payroll", payrollRouter);
 app.use("/api/employee", employeeRouter);
 app.use("/api/hr", hrRouter);
 app.use('/api', uploadRouter);
