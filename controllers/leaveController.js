@@ -227,6 +227,7 @@ export const getLeavesByUserId = async (req, res) => {
 
 export const getLoginUserAllLeaves = async (req, res) => {
   try {
+
     if (!req.user || !req.user?._id) {
       return res.status(400).json({
         success: false,
@@ -234,14 +235,25 @@ export const getLoginUserAllLeaves = async (req, res) => {
         message: "User not authenticated",
       });
     }
-    console.log("Fetching leaves for user:", req.user?._id);
-    const leaves = await LeaveModel.find({ employee: req.user?._id });
+    const userId = req.user._id;
+    const totalLeavesAllowed = 14;
+    const leaves = await LeaveModel.find({ employee:userId}).lean();
+
+       const usedLeaves = leaves.length;
+    const leaveBalance = totalLeavesAllowed - usedLeaves;
+
+     const updatedLeaves = leaves.map((leave) => ({
+      ...leave,
+      leaveBalance,
+    }));
 
     if (!leaves || leaves.length === 0) {
-      return res.status(404).json({
-        success: false,
-        statusCode: 404,
+      return res.status(200).json({
+        success: true,
+        statusCode: 200,
         message: "No leaves found for this user.",
+        leaveBalance,
+        updatedLeaves
       });
     }
 
