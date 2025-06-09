@@ -127,7 +127,13 @@ export const updateLeaveStatus = async (req, res) => {
 
         await user.save();
       }
-
+      if (leave.status === "approved" && status === "approved") {
+        return res.status(400).json({
+          success: false,
+          statusCode: 400,
+          message: "Leave already approved",
+        });
+      }
     }
     leave.status = status;
     await leave.save();
@@ -221,8 +227,6 @@ export const getLeavesByUserId = async (req, res) => {
   }
 };
 
-// getLoginUserAllLeaves
-
 export const getLoginUserAllLeaves = async (req, res) => {
   try {
 
@@ -237,31 +241,23 @@ export const getLoginUserAllLeaves = async (req, res) => {
     const totalLeavesAllowed = 14;
     const leaves = await LeaveModel.find({ employee:userId}).lean();
 
-       const usedLeaves = leaves.length;
-    const leaveBalance = totalLeavesAllowed - usedLeaves;
+       const usedLeaves = leaves.filter((leave) => leave.status === "approved").reduce((acc, leave) => acc + leave.leaveTaken, 0);
+       const leaveBalance = totalLeavesAllowed - usedLeaves;
 
      const updatedLeaves = leaves.map((leave) => ({
       ...leave,
       leaveBalance,
     }));
 
-    if (!leaves || leaves.length === 0) {
-      return res.status(200).json({
-        success: true,
-        statusCode: 200,
-        message: "No leaves found for this user.",
-        leaveBalance,
-        updatedLeaves
-      });
-    }
-
     res.status(200).json({
       success: true,
       statusCode: 200,
-      message: "Leaves fetched successfully.",
+      message: leaves.length > 0 ? "Leaves fetched successfully." : "No leaves found for this user.",
       count: leaves.length,
-      data: leaves,
+      leaveBalance,
+      data: updatedLeaves,
     });
+    
   } catch (error) {
     console.error("Error in getLoginUserAllLeaves:", error);
     res.status(500).json({
