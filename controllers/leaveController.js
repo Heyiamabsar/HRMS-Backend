@@ -111,26 +111,24 @@ export const updateLeaveStatus = async (req, res) => {
       }));
 
       await AttendanceModel.bulkWrite(operations);
-        let user;
-      if (leave.status === "approved") {
-         user = await userModel.findById(leave.userId);
+      if (status === "approved" && leave.status !== "approved") {
+        let user = await userModel.findById(leave.employee);
 
         if (leave.leaveType === "casual" || leave.leaveType === "vacation") {
           leave.leaveBalance = leaveBalance - leave.leaveTaken;
         } else if (leave.leaveType === "sick") {
-          user.sickLeaves += leave.leaveTaken;
+          user.sickLeaves = (user.sickLeaves || 0) + leave.leaveTaken;
         } else if (leave.leaveType === "LOP" || leave.leaveType === "unpaid") {
-          user.unpaidLeaves += leave.leaveTaken;
+          user.unpaidLeaves = (user.unpaidLeaves || 0) + leave.leaveTaken;
         }
 
         leave.sickLeave = user.sickLeaves;
         leave.unPaidLeave = user.unpaidLeaves;
 
         await user.save();
-        await leave.save();
       }
-    }
 
+    }
     leave.status = status;
     await leave.save();
 
