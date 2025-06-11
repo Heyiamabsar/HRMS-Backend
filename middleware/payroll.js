@@ -15,10 +15,10 @@ export const loadAllUserToExcel=async()=>{
     }
 
     // ✅ Pick only required fields
-    const selectedFields = ['_id', 'first_name','last_name', 'email', 'role', 'phone','salary']; // customize as needed
+    const selectedFields = ['first_name','last_name', 'email', 'role', 'phone','department','designation','userId','sickLeaves','unpaidLeaves','salary']; // customize as needed
     const filteredUsers = users.map((user) => {
       const picked = _.pick(user, selectedFields);
-      picked._id = String(user._id); // ensure _id is a string
+      // picked._id = String(user._id); // ensure _id is a string
       return picked;
     });
 
@@ -29,7 +29,7 @@ export const loadAllUserToExcel=async()=>{
 
     // ✅ Path to Desktop
     const desktopDir = path.join(os.homedir(), 'Desktop');
-    const filePath = path.join(desktopDir, 'payroll-data.xlsx');
+    const filePath = path.join(desktopDir, 'payroll_data.xlsx');
 
     xlsx.writeFile(workbook, filePath);
 
@@ -73,7 +73,7 @@ const filePath = 'payroll-data.xlsx';
 export const getExcelData = () => {
   try {
     const desktopDir = path.join(os.homedir(), 'Desktop');
-    const filePath = path.join(desktopDir, 'payroll-data.xlsx');
+    const filePath = path.join(desktopDir, 'payroll_data.xlsx');
 
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets['Users']; // 📝 Make sure this matches the sheet name
