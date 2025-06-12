@@ -218,7 +218,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 
     // 1. Fetch Attendance Records
     const attendanceRecords = await AttendanceModel.find({ userId })
-      .populate('userId', 'first_name last_name email status userId');
+      .populate('userId', 'first_name last_name email status userId joining_date');
 
     // 2. Fetch Leave Records
     const leaveRecords = await LeaveModel.find({ userId })
@@ -316,6 +316,7 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
           userName: `${user.first_name} ${user.last_name}`,
           userEmail: user.email,
           userPhone: user.phone,
+          joining_date: user.joining_date,
           attendanceHistory: [],
         };
       }
