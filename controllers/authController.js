@@ -50,7 +50,6 @@ export const login = async (req, res) => {
 
       await user.save();
 
-
     res.json({
       success : true,  
       statusCode: 200,
