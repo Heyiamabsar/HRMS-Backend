@@ -48,10 +48,10 @@ export const saveUserTimeZone = async (req, res) => {
 // Get All Users
 export const getAllUsers = async (req, res) => {
   try {
-    const filter = req.user.role === 'hr' ? { role: 'employee' } : { role: { $in: ['employee', 'hr'] } };
+    const filter = req.user.role === 'hr' ? { role: 'employee' } : { role: { $in: ['employee', 'hr', 'admin'] } };
     const users = await User.find(filter).select('-password -__v');
 
-
+    console.log("Fetched Users:", users);
     res.status(200).json({
       success: true,
       statusCode: 200,
