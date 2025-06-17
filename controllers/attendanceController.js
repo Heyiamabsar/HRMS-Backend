@@ -5,7 +5,9 @@ import userModel from '../models/userModel.js';
 import holidayModel from '../models/holidayModule.js';
 import { formatAttendanceRecord } from '../utils/attendanceUtils.js';
 import LeaveModel from '../models/leaveModel.js';
-
+import ExcelJS from 'exceljs';
+import path from 'path';
+import fs from 'fs';
 
 // Punch IN
 export const markInTime = async (req, res) => {
@@ -246,53 +248,6 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 };
 
 // Get all users' full attendance history
-// Admin or HR only
-// export const getAllUsersFullAttendanceHistory = async (req, res) => {
-//   try {
-
-//     const records = await AttendanceModel.find();
-//     const users = await userModel.find({});
-//     console.log('Fetched Records:', users);
-//     // const userTimeZone = req.user.timeZone || 'UTC';
-// // attendanceByUser with user name and email
-//     const attendanceByUser = {};
-//     records.forEach(record => {
-
-//  records.forEach(record => {
-//   const user = users.find(u => u._id === record.userId);
-//   if (user) {
-//     record.userName = `${user.first_name} ${user.last_name}`;
-//     record.userEmail = user.email;
-//   }
-// });
-    
-
-//       const userId = record.userId;
-
-//       if (!attendanceByUser[userId]) attendanceByUser[userId] = [];
-//       attendanceByUser[userId].push(record);
-      
-
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       statusCode: 200,
-//       message: "All users' attendance history fetched successfully",
-//       data: attendanceByUser,
-      
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       statusCode: 500,
-//       message: 'Error fetching full attendance history',
-//       error: error.message
-//     });
-//   }
-// };
-
-
 export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
     const records = await AttendanceModel.find();
@@ -340,7 +295,112 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
   }
 };
 
+// Get All Users Attendance Report export to Excel 
+export const getAllUsersAttendanceReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
 
+    if (!startDate || !endDate) {
+      return res.status(400).json({ success: false, message: 'Start date and end date are required' });
+    }
+
+    const start = moment(startDate).startOf('day');
+    const end = moment(endDate).endOf('day');
+    const dateRange = [];
+
+    for (let m = moment(start); m.isSameOrBefore(end); m.add(1, 'days')) {
+      dateRange.push(m.format('YYYY-MM-DD'));
+    }
+
+    const records = await AttendanceModel.find({
+      date: { $gte: start.toDate(), $lte: end.toDate() }
+    }).populate('userId', 'first_name last_name email status');
+
+    const userMap = new Map();
+
+    records.forEach(record => {
+      const user = record.userId;
+      const userKey = user._id.toString();
+
+      if (!userMap.has(userKey)) {
+        userMap.set(userKey, {
+          userId: user._id,
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email,
+          status: user.status,
+          attendance: {},
+          presentCount: 0
+        });
+      }
+
+      const formattedDate = moment(record.date).format('YYYY-MM-DD');
+      const userData = userMap.get(userKey);
+      userData.attendance[formattedDate] = record.status;
+
+      if (record.status.toLowerCase() === 'present') {
+        userData.presentCount += 1;
+      }
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Attendance Report');
+
+    const columns = [
+      { header: 'User ID', key: 'userId', width: 25 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Status', key: 'status', width: 15 },
+      ...dateRange.map(date => ({ header: date, key: date, width: 15 })),
+      { header: 'Total Present', key: 'totalPresent', width: 15 }
+    ];
+    sheet.columns = columns;
+
+    for (const [, user] of userMap.entries()) {
+      const row = {
+        userId: user.userId.toString(),
+        name: user.name,
+        email: user.email,
+        status: user.status,
+        totalPresent: user.presentCount
+      };
+
+      dateRange.forEach(date => {
+        row[date] = user.attendance[date] || 'N/A';
+      });
+
+      sheet.addRow(row);
+    }
+
+    // 👇 File Save Path
+    const fileName = `Attendance_Report_${startDate}_to_${endDate}.xlsx`;
+    const filePath = path.join('downloads', fileName);
+
+    // Ensure downloads folder exists
+    if (!fs.existsSync('downloads')) {
+      fs.mkdirSync('downloads');
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="Attendance_Report_${startDate}_to_${endDate}.xlsx"`);
+
+    await workbook.xlsx.writeFile(filePath);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Excel file generated successfully',
+      downloadUrl: `/downloads/${fileName}`
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong',
+      error: error.message
+    });
+  }
+};
 
 
 

@@ -12,6 +12,12 @@ import attendanceRouter from "./routes/attendanceRoutes.js";
 import holidayRouter from "./routes/holidayRoutes.js";
 import payrollRouter from "./routes/payrollRoutes.js";
 import cloudExcelRouter from "./routes/cloudExcelRoutes.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 dotenv.config();
@@ -25,7 +31,7 @@ app.use(cors({
 }));
 
 
-
+app.use('/downloads', express.static(path.join(__dirname, 'public/downloads')));
 app.use("/api/auth", authRoutes);
 app.use("/api/payroll", payrollRouter);
 app.use("/api/employee", employeeRouter);
