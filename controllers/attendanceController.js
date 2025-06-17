@@ -331,7 +331,9 @@ export const getAllUsersAttendanceReport = async (req, res) => {
           email: user.email,
           status: user.status,
           attendance: {},
-          presentCount: 0
+          presentCount: 0,
+          absentCount: 0,
+          halfDayCount: 0
         });
       }
 
@@ -341,6 +343,12 @@ export const getAllUsersAttendanceReport = async (req, res) => {
 
       if (record.status.toLowerCase() === 'present') {
         userData.presentCount += 1;
+      }
+      if (record.status.toLowerCase() === 'absent') {
+        userData.absentCount += 1;
+      }
+      if (record.status.toLowerCase() === 'half day') {
+        userData.halfDayCount += 1;
       }
     });
 
@@ -363,7 +371,9 @@ export const getAllUsersAttendanceReport = async (req, res) => {
         name: user.name,
         email: user.email,
         status: user.status,
-        totalPresent: user.presentCount
+        totalPresent: user.presentCount,
+        totalAbsent: user.absentCount,
+        totalHalfDay: user.halfDayCount
       };
 
       dateRange.forEach(date => {
