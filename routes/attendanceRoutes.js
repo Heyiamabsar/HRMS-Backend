@@ -1,5 +1,5 @@
 import express from 'express';
-import {  getAllUsersFullAttendanceHistory, getAllUsersTodayAttendance, getSingleUserFullAttendanceHistory, getTodayAttendance, markInTime, markOutTime } from '../controllers/attendanceController.js';
+import {  getAllUsersAttendanceReport, getAllUsersFullAttendanceHistory, getAllUsersTodayAttendance, getSingleUserFullAttendanceHistory, getTodayAttendance, markInTime, markOutTime } from '../controllers/attendanceController.js';
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
 
 
@@ -13,5 +13,8 @@ attendanceRouter.get('/single_user_attendance_history', authenticate, authorizeR
 
 attendanceRouter.get('/all_users_today_attendance', authenticate, authorizeRoles('admin', 'hr'), getAllUsersTodayAttendance);
 attendanceRouter.get('/all_user_attendance_history', authenticate, authorizeRoles('admin', 'hr'), getAllUsersFullAttendanceHistory);
+
+
+attendanceRouter.get('/all_user_attendance_report', authenticate, authorizeRoles('admin', 'hr'), getAllUsersAttendanceReport);
 
 export default attendanceRouter;
