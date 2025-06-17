@@ -21,6 +21,7 @@ export const markInTime = async (req, res) => {
       return res.status(400).json({ success: false, statusCode: 400, message: 'Already punched in today' });
     }
 
+
     let todayStatus ;
    const inTime = moment().tz(userTimeZone).toDate();
     const nineFifteen = moment(`${date} 09:15 AM`, 'YYYY-MM-DD hh:mm A').tz(userTimeZone);
