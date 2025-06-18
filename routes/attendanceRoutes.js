@@ -16,5 +16,6 @@ attendanceRouter.get('/all_user_attendance_history', authenticate, authorizeRole
 
 
 attendanceRouter.get('/all_user_attendance_report', authenticate, authorizeRoles('admin', 'hr'), getAllUsersAttendanceReport);
+// attendanceRouter.get('/migrate_string_dates', authenticate, authorizeRoles('admin', 'hr'), migrateStringDatesToDateType);
 
 export default attendanceRouter;
