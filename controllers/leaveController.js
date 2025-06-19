@@ -49,39 +49,44 @@ export const updateLeaveStatus = async (req, res) => {
     const leaveId = req.params.id;
     const { status, fromDate, toDate } = req.body;
 
-    console.log("Request Body updateApi", req.body);
-    console.log("leaveId", leaveId);
-
-    if (!["approved", "rejected"].includes(status)) {
-      return res
-        .status(400)
-        .json({ success: false, statusCode: 400, message: "Invalid status" });
+    if (!["approved", "rejected", "cancelled"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        message: "Invalid status",
+      });
     }
 
     const leave = await LeaveModel.findById(leaveId);
-    console.log("leave update Api", leave);
     if (!leave) {
-      return res
-        .status(404)
-        .json({ success: false, statusCode: 404, message: "Leave not found" });
+      return res.status(404).json({
+        success: false,
+        statusCode: 404,
+        message: "Leave not found",
+      });
     }
 
-    if (status === "approved") {
-      // Get all approved leaves of the employee
+    const user = await userModel.findById(leave.employee);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        statusCode: 404,
+        message: "User not found",
+      });
+    }
+
+    // APPROVE CASE
+    if (status === "approved" && leave.status !== "approved") {
       const existingLeaves = await LeaveModel.find({
         employee: leave.employee,
         status: "approved",
       });
-      console.log("existingLeaves", existingLeaves);
 
       const totalLeaveTaken = existingLeaves.reduce(
-        (acc, leave) => acc + leave.leaveTaken,
+        (acc, l) => acc + l.leaveTaken,
         0
       );
       const leaveBalance = 14 - totalLeaveTaken;
-
-      console.log("totalLeaveTaken", totalLeaveTaken);
-      console.log("leaveBalance", leaveBalance);
 
       if (leaveBalance < leave.leaveTaken) {
         return res.status(400).json({
@@ -92,7 +97,6 @@ export const updateLeaveStatus = async (req, res) => {
       }
 
       const dates = [];
-      console.log("dates before", dates);
       for (
         let date = moment(fromDate);
         date.isSameOrBefore(toDate);
@@ -100,7 +104,6 @@ export const updateLeaveStatus = async (req, res) => {
       ) {
         dates.push(date.format("YYYY-MM-DD"));
       }
-      console.log("dates After", dates);
 
       const operations = dates.map((date) => ({
         updateOne: {
@@ -109,33 +112,54 @@ export const updateLeaveStatus = async (req, res) => {
           upsert: true,
         },
       }));
-
       await AttendanceModel.bulkWrite(operations);
-      if (status === "approved" && leave.status !== "approved") {
-        let user = await userModel.findById(leave.employee);
 
-        if (leave.leaveType === "casual" || leave.leaveType === "vacation") {
-          leave.leaveBalance = leaveBalance - leave.leaveTaken;
-        } else if (leave.leaveType === "sick") {
-          user.sickLeaves = (user.sickLeaves || 0) + leave.leaveTaken;
-        } else if (leave.leaveType === "LOP" || leave.leaveType === "unpaid") {
-          user.unpaidLeaves = (user.unpaidLeaves || 0) + leave.leaveTaken;
-        }
-
-        leave.sickLeave = user.sickLeaves;
-        leave.unPaidLeave = user.unpaidLeaves;
-
-        await user.save();
+      if (leave.leaveType === "casual" || leave.leaveType === "vacation") {
+        leave.leaveBalance = leaveBalance - leave.leaveTaken;
+      } else if (leave.leaveType === "sick") {
+        user.sickLeaves = (user.sickLeaves || 0) + leave.leaveTaken;
+      } else if (leave.leaveType === "LOP" || leave.leaveType === "unpaid") {
+        user.unpaidLeaves = (user.unpaidLeaves || 0) + leave.leaveTaken;
       }
-      if (leave.status === "approved" && status === "approved") {
-        return res.status(400).json({
-          success: false,
-          statusCode: 400,
-          message: "Leave already approved",
-        });
-      }
+
+      leave.sickLeave = user.sickLeaves;
+      leave.unPaidLeave = user.unpaidLeaves;
     }
+
+    // CANCEL CASE
+    if (leave.status === "approved" && status === "cancelled") {
+      const dates = [];
+      for (
+        let date = moment(fromDate);
+        date.isSameOrBefore(toDate);
+        date.add(1, "days")
+      ) {
+        dates.push(date.format("YYYY-MM-DD"));
+      }
+
+      await Promise.all(
+        dates.map((date) =>
+          AttendanceModel.updateOne(
+            { date, userId: leave.employee, status: "Leave" },
+            { $set: { status: "" } }
+          )
+        )
+      );
+
+      if (leave.leaveType === "casual" || leave.leaveType === "vacation") {
+        leave.leaveBalance += leave.leaveTaken;
+      } else if (leave.leaveType === "sick") {
+        user.sickLeaves = (user.sickLeaves || 0) - leave.leaveTaken;
+      } else if (leave.leaveType === "LOP" || leave.leaveType === "unpaid") {
+        user.unpaidLeaves = (user.unpaidLeaves || 0) - leave.leaveTaken;
+      }
+
+      leave.sickLeave = user.sickLeaves;
+      leave.unPaidLeave = user.unpaidLeaves;
+    }
+
     leave.status = status;
+    await user.save();
     await leave.save();
 
     res.status(200).json({
@@ -155,6 +179,7 @@ export const updateLeaveStatus = async (req, res) => {
     });
   }
 };
+
 
 export const getAllLeavesStatus = async (req, res) => {
   try {
