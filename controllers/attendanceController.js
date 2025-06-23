@@ -195,12 +195,21 @@ export const getAllUsersTodayAttendance = async (req, res) => {
                 firstName: attendance.userId.first_name || null,
                 lastName: attendance.userId.last_name || null,
                 email: attendance.userId.email || null,
+                department: attendance.userId.department || null,
+                designation: attendance.userId.designation || null,
+                salary: attendance.userId.salary || null,
+                role: attendance.userId.role || null,
+
               }
             : {
                 userId: user._id || null,
                 firstName: user.first_name || null,
                 lastName: user.last_name || null,
                 email: user.email || null,
+                department: user.department || null,
+                designation: user.designation || null,
+                salary: user.salary || null,
+                role:user.role || null
               },
           date: attendance.date || null,
           inTime: attendance.inTime || null,
