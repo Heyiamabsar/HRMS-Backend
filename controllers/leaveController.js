@@ -2,6 +2,8 @@ import AttendanceModel from "../models/attendanceModule.js";
 import LeaveModel from "../models/leaveModel.js";
 import userModel from "../models/userModel.js";
 import mongoose from "mongoose";
+import ExcelJS from 'exceljs';
+
 import moment from "moment-timezone";
 
 export const applyLeave = async (req, res) => {
@@ -289,6 +291,130 @@ export const getLoginUserAllLeaves = async (req, res) => {
       success: false,
       statusCode: 500,
       message: "Internal Server Error. Failed to fetch user's leaves.",
+      error: error.message,
+    });
+  }
+};
+
+
+
+export const getAllUsersLeaveReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const { _id } = req.user;
+
+    const user = await userModel.findById(_id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ success: false, message: 'Start date and end date are required' });
+    }
+
+    const formattedStart = moment.tz(startDate, user.timeZone).startOf('day').toDate();
+    const formattedEnd = moment.tz(endDate, user.timeZone).endOf('day').toDate();
+
+    const leaves = await LeaveModel.find({
+      fromDate: { $lte: formattedEnd },
+      toDate: { $gte: formattedStart }
+    }).populate('userId');
+
+    const leaveMap = new Map();
+
+    leaves.forEach((leave) => {
+      const recordUser = leave.userId;
+      if (!recordUser?._id) return;
+
+      const userKey = recordUser._id.toString();
+
+      if (!leaveMap.has(userKey)) {
+        leaveMap.set(userKey, {
+          // userId: recordUser._id,
+          name: `${recordUser.first_name} ${recordUser.last_name}`,
+          email: recordUser.email,
+          status: recordUser.status,
+          sickLeave: 0,
+          unPaidLeave: 0,
+          leaveBalance: leave.leaveBalance || 0,
+          leaves: [],
+        });
+      }
+
+      const totalDays = moment(leave.toDate).diff(moment(leave.fromDate), 'days') + 1;
+
+      // Aggregate leave counts
+      leaveMap.get(userKey).sickLeave += leave.sickLeave || 0;
+      leaveMap.get(userKey).unPaidLeave += leave.unPaidLeave || 0;
+
+      leaveMap.get(userKey).leaves.push({
+        reason: leave.reason,
+        fromDate: moment(leave.fromDate).format("YYYY-MM-DD"),
+        toDate: moment(leave.toDate).format("YYYY-MM-DD"),
+        leaveType: leave.leaveType,
+        status: leave.status,
+        appliedAt: moment(leave.appliedAt).format("YYYY-MM-DD"),
+        totalDays
+      });
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Leave Report');
+
+    sheet.columns = [
+      // { header: 'User ID', key: 'userId', width: 25 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Leave Type', key: 'leaveType', width: 15 },
+      { header: 'Reason', key: 'reason', width: 30 },
+      { header: 'From Date', key: 'fromDate', width: 15 },
+      { header: 'To Date', key: 'toDate', width: 15 },
+      { header: 'Total Days', key: 'totalDays', width: 15 },
+      { header: 'Leave Status', key: 'leaveStatus', width: 15 },
+      { header: 'Applied At', key: 'appliedAt', width: 20 },
+      { header: 'Sick Leave Taken', key: 'sickLeave', width: 15 },
+      { header: 'Unpaid Leave Taken', key: 'unPaidLeave', width: 15 },
+      { header: 'Leave Balance', key: 'leaveBalance', width: 15 },
+    ];
+
+    for (const [, user] of leaveMap.entries()) {
+      user.leaves.forEach((lv) => {
+        sheet.addRow({
+          // userId: user.userId.toString(),
+          name: user.name,
+          email: user.email,
+          status: user.status,
+          leaveType: lv.leaveType,
+          reason: lv.reason,
+          fromDate: lv.fromDate,
+          toDate: lv.toDate,
+          totalDays: lv.totalDays,
+          leaveStatus: lv.status,
+          appliedAt: lv.appliedAt,
+          sickLeave: user.sickLeave,
+          unPaidLeave: user.unPaidLeave,
+          leaveBalance: user.leaveBalance,
+        });
+      });
+    }
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Leave_Report_${startDate}_to_${endDate}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong',
       error: error.message,
     });
   }

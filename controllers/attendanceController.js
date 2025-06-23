@@ -154,7 +154,7 @@ export const getTodayAttendance = async (req, res) => {
     }
     const attendance = await AttendanceModel.findOne({ date, userId }).populate(
       "userId",
-      "first_name last_name email status userId"
+      "first_name last_name email status userId department designation salary role"
     );
     console.log("Today's Attendance:", attendance);
 
@@ -181,7 +181,7 @@ export const getAllUsersTodayAttendance = async (req, res) => {
     const date = moment().format("YYYY-MM-DD");
 
     const attendances = await AttendanceModel.find({ date })
-      .populate("userId", "first_name last_name email status userId")
+      .populate("userId", "first_name last_name email status userId  department designation salary role")
       .sort({ inTime: 1, outTime: 1 });
 
     const result = await Promise.all(
@@ -237,7 +237,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
     // 1. Fetch Attendance Records
     const attendanceRecords = await AttendanceModel.find({ userId }).populate(
       "userId",
-      "first_name last_name email status userId joining_date"
+      "first_name last_name email status userId joining_date  department designation salary role"
     );
 
     // 2. Fetch Leave Records
@@ -292,6 +292,10 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
           userEmail: user.email,
           userPhone: user.phone,
           joining_date: user.joining_date,
+          department: user.department,
+          designation: user.designation,
+          salary: user.salary,
+          role: user.role,
           attendanceHistory: [],
         };
       }

@@ -3,6 +3,7 @@ import express from 'express';
 import {
   applyLeave,
   getAllLeavesStatus,
+  getAllUsersLeaveReport,
   getLeavesByUserId,
   getLoginUserAllLeaves,
   updateLeaveStatus,
@@ -18,5 +19,6 @@ leaveRouter.get('/', authenticate,  authorizeRoles('admin', 'hr'), getAllLeavesS
 leaveRouter.get('/leaves_byId/:id', authenticate,  authorizeRoles('admin', 'hr'), getLeavesByUserId);
 leaveRouter.put('/update_leave/:id', authenticate,  authorizeRoles('admin', 'hr'), updateLeaveStatus);
 
+leaveRouter.get('/all_user_leave_report', authenticate,  authorizeRoles('admin', 'hr'), getAllUsersLeaveReport);
 
 export default leaveRouter;
