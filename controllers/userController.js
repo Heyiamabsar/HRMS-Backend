@@ -1,5 +1,6 @@
 import User from '../models/userModel.js';
 import moment from 'moment-timezone';
+import bcrypt from 'bcryptjs';
 
 
 // Save User Time Zone
@@ -93,7 +94,9 @@ export const getUserById = async (req, res) => {
 // Update User
 export const updateUser = async (req, res) => {
   try {
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+     const { password, ...updateData } = req.body;
+     
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
     if (!updatedUser) {
       return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
@@ -107,6 +110,45 @@ export const updateUser = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ statusCode: 500, success: false, message: 'Failed to update user', error: error.message });
+  }
+};
+
+export const updateUserPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        statusCode: 400,
+        success: false,
+        message: 'Password is required',
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      success: true,
+      message: 'Password updated successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: 'Failed to update password',
+      error: error.message,
+    });
   }
 };
 
