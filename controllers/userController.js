@@ -95,6 +95,11 @@ export const getUserById = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
      const { password, ...updateData } = req.body;
+
+     if(password){
+       
+       res.status(404).json({ statusCode: 404, success: false, message: "You don't have permission to reset the password" });
+     }
      
     const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
@@ -137,7 +142,7 @@ export const updateUserPassword = async (req, res) => {
       return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
     }
 
-    res.status(200).json({
+   return res.status(200).json({
       statusCode: 200,
       success: true,
       message: 'Password updated successfully',
