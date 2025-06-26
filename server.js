@@ -14,6 +14,7 @@ import payrollRouter from "./routes/payrollRoutes.js";
 import cloudExcelRouter from "./routes/cloudExcelRoutes.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
+import reportRouter from "./routes/reportsRoutes.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,6 +40,7 @@ app.use("/api/hr", hrRouter);
 app.use('/api', uploadRouter);
 app.use('/api/attendance', attendanceRouter);
 app.use('/api/leaves', leaveRouter);
+app.use('/api/report', reportRouter);
 app.use('/api/holidays', holidayRouter);
 app.use('/api/cloud_excel', cloudExcelRouter);
 

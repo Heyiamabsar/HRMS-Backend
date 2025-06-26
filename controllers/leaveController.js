@@ -9,26 +9,43 @@ import moment from "moment-timezone";
 export const applyLeave = async (req, res) => {
   try {
     const { leaveType, fromDate, toDate, reason } = req.body;
-    console.log("Request body", req.body);
+    const userId = req.user?._id;
 
     const leaveDays =
       Math.ceil(
         (new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24)
       ) + 1;
-    console.log("leaves Days", leaveDays);
+
+
+    const overlappingLeave = await LeaveModel.findOne({
+      userId,
+      status: "approved",
+      $or: [
+        {
+          fromDate: { $lte: toDate },
+          toDate: { $gte: fromDate },
+        },
+      ],
+    });
+
+    if (overlappingLeave) {
+      return res.status(400).json({
+        success: false,
+        message: "Leave already approved in the selected date range",
+      });
+    }
+
     const leave = await LeaveModel.create({
-      employee: req.user?._id,
-      userId: req.user?._id,
+      employee: userId,
+      userId,
       leaveType,
       fromDate,
       toDate,
       reason,
       leaveTaken: leaveDays,
       maximumLeave: 14,
-      status: "pending", // default status
+      status: "pending",
     });
-
-    console.log("leave", leave);
 
     res.status(201).json({
       success: true,
