@@ -14,6 +14,10 @@ const holidaySchema = new mongoose.Schema({
   isCustom: {
     type: Boolean,
     default: false,
+  },
+  isOptional: {
+    type: Boolean,
+    default: false,
   }
 });
 

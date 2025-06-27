@@ -63,10 +63,13 @@ export const markOutTime = async (req, res) => {
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
 
     const attendance = await AttendanceModel.findOne({ userId, date });
+        const holiday = await holidayModel.findOne({ date, isOptional: false });
+
     const inTime = moment(attendance.inTime).tz(userTimeZone);
     const nineFifteen = moment(`${date} 09:15 AM`, "YYYY-MM-DD hh:mm A").tz(
       userTimeZone
     );
+
 
     if (!attendance || !attendance.inTime) {
       return res.status(400).json({
@@ -108,6 +111,25 @@ export const markOutTime = async (req, res) => {
       todayStatus = "Half Day";
     }
 
+        if (holiday) {
+      if (!attendance) {
+        attendance = await AttendanceModel.create({
+          userId,
+          date,
+          inTime: null,
+          outTime: null,
+          status: "Holiday",
+        });
+      } else if (!attendance.inTime && !attendance.outTime && attendance.status !== "Holiday") {
+        attendance.status = "Holiday";
+        await attendance.save();
+      } else if (attendance.inTime && attendance.outTime) {
+        attendance.status = "Over Time";
+        todayStatus = "Over Time"
+        await attendance.save();
+      }
+    }
+
     const attendanceStatus = await AttendanceModel.findOneAndUpdate(
       { userId, date },
       { $set: { status: todayStatus } },
@@ -133,11 +155,23 @@ export const markOutTime = async (req, res) => {
 export const getTodayAttendance = async (req, res) => {
   try {
     const userId = req.user._id;
-    console.log("Fetching today's attendance for user:", userId);
     const date = moment().format("YYYY-MM-DD");
-    const holiday = await holidayModel.findOne({ date });
+
+
+    const holiday = await holidayModel.findOne({ date, isOptional: false });
+    let attendance = await AttendanceModel.findOne({ date, userId });
 
     if (holiday) {
+      if (!attendance) {
+        attendance = await AttendanceModel.create({
+          userId,
+          date,
+          inTime: null,
+          outTime: null,
+          status: "Holiday",
+        });
+         await attendance.save();
+      }
       return res.status(200).json({
         success: true,
         statusCode: 200,
@@ -151,13 +185,32 @@ export const getTodayAttendance = async (req, res) => {
           status: "Holiday",
         },
       });
+      
     }
-    const attendance = await AttendanceModel.findOne({ date, userId }).populate(
+
+
+    if (!attendance) {
+
+      attendance = await AttendanceModel.create({
+        userId,
+        date,
+        inTime: null,
+        outTime: null,
+        status: "Absent",
+      });
+    } else if (!attendance.inTime && !attendance.outTime && attendance.status !== "Absent") {
+      // ❌ No in/out time? Update status to Absent in DB
+      attendance.status = "Absent";
+      await attendance.save();
+    }
+
+    // Populate user details
+    await attendance.populate(
       "userId",
       "first_name last_name email status userId department designation salary role"
     );
-    console.log("Today's Attendance:", attendance);
 
+    // ✅ Return final response
     res.status(200).json({
       success: true,
       statusCode: 200,

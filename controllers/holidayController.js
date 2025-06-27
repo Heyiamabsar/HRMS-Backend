@@ -6,7 +6,7 @@ import holidayModel from "../models/holidayModule.js";
 //  Add custom holiday
 export const addCustomHoliday = async (req, res) => {
   try {
-    const { date, reason } = req.body;
+    const { date, reason , isOptional } = req.body;
     if (!date || !reason) return res.status(400).json({success:false ,statusCode:400, message: "Date and reason are required" });
     if (!moment(date, "YYYY-MM-DD", true).isValid()) return res.status(400).json({success:false ,statusCode:400, message: "Invalid date format" });
     if (moment(date).isBefore(moment().startOf("day"))) return res.status(400).json({success:false ,statusCode:400, message: "Cannot add past holidays" });
@@ -17,12 +17,50 @@ export const addCustomHoliday = async (req, res) => {
     
     const existing = await holidayModel.findOne({ date: holidayDate });
     if (existing) return res.status(400).json({success:false ,statusCode:400, message: "Holiday already exists" });
-    const holiday = new holidayModel({ date: holidayDate, reason, isCustom: true });
+    const holiday = new holidayModel({ date: holidayDate, reason, isCustom: true , isOptional: isOptional || false });
     await holiday.save();
 
     res.status(201).json({ success:true ,statusCode:201, message: "Custom holiday added", holiday });
   } catch (error) {
     res.status(500).json({ success:false ,statusCode:500, message: "Server error", error });
+  }
+};
+
+
+//  Edit a custom holiday
+export const updateHoliday = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, reason , isOptional} = req.body;
+
+    if (!id) return res.status(400).json({success:false , statusCode:400,  message: "Holiday ID is required" });
+    if (!date && !reason) return res.status(400).json({success:false , statusCode:400,  message: "Date and reason are required" });
+
+    if (date && !moment(date, "YYYY-MM-DD", true).isValid()) return res.status(400).json({success:false , statusCode:400,   message: "Invalid date format date must be YYYY-MM-DD" });
+
+    if (date) {
+      const existing = await holidayModel.findOne({
+        date: moment(date).startOf("day"),
+        _id: { $ne: id }
+      });
+       if (existing) return res.status(400).json({success:false , statusCode:400,   message: "Holiday already exists" });
+    }
+
+    const holiday = await holidayModel.findById(id);
+
+    if (!holiday) return res.status(404).json({success:false , statusCode:404,   message: "Holiday not found" });
+    if (!holiday.isCustom) return res.status(400).json({success:false , statusCode:400,   message: "Cannot edit default (Sunday) holidays" });
+
+    holiday.date = date;
+    holiday.reason = reason;
+    if (typeof isOptional !== "undefined") {
+    holiday.isOptional = isOptional;
+  }
+    await holiday.save();
+
+    res.status(200).json({success:true , statusCode:200,   message: "Holiday updated", holiday });
+  } catch (error) {
+    res.status(500).json({success:false , statusCode:500,   message: "Server error", error: error.message });
   }
 };
 
@@ -79,41 +117,6 @@ export const getAllHolidays = async (req, res) => {
     res.status(200).json({success:true , statusCode:200, message: "Holidays fetched successfully", data: holidays});
   } catch (error) {
     res.status(500).json({success:false , statusCode:500,  message: "Server error", error });
-  }
-};
-
-
-//  Edit a custom holiday
-export const updateHoliday = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { date, reason } = req.body;
-
-    if (!id) return res.status(400).json({success:false , statusCode:400,  message: "Holiday ID is required" });
-    if (!date && !reason) return res.status(400).json({success:false , statusCode:400,  message: "Date and reason are required" });
-
-    if (date && !moment(date, "YYYY-MM-DD", true).isValid()) return res.status(400).json({success:false , statusCode:400,   message: "Invalid date format date must be YYYY-MM-DD" });
-
-    if (date) {
-      const existing = await holidayModel.findOne({
-        date: moment(date).startOf("day"),
-        _id: { $ne: id }
-      });
-       if (existing) return res.status(400).json({success:false , statusCode:400,   message: "Holiday already exists" });
-    }
-
-    const holiday = await holidayModel.findById(id);
-
-    if (!holiday) return res.status(404).json({success:false , statusCode:404,   message: "Holiday not found" });
-    if (!holiday.isCustom) return res.status(400).json({success:false , statusCode:400,   message: "Cannot edit default (Sunday) holidays" });
-
-    holiday.date = date;
-    holiday.reason = reason;
-    await holiday.save();
-
-    res.status(200).json({success:true , statusCode:200,   message: "Holiday updated", holiday });
-  } catch (error) {
-    res.status(500).json({success:false , statusCode:500,   message: "Server error", error: error.message });
   }
 };
 
