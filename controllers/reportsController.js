@@ -5,6 +5,7 @@ import moment from "moment-timezone";
 import ExcelJS from "exceljs";
 import path from "path";
 import fs from "fs";
+import payrollModel from "../models/payrollModel.js";
 
 
 export const getOverallEmployeeReport = async (req, res) => {
@@ -157,5 +158,415 @@ export const getOverallEmployeeReport = async (req, res) => {
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+  }
+};
+
+export const getAllUsersAttendanceReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const { _id } = req.user;
+
+    const user = await userModel.findById(_id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Start date and end date are required",
+      });
+    }
+
+    const formattedStart = moment.tz(startDate, user.timeZone).format("YYYY-MM-DD");
+    const formattedEnd = moment.tz(endDate, user.timeZone).format("YYYY-MM-DD");
+
+    const dateRange = [];
+    let curr = moment.tz(startDate, user.timeZone).startOf("day");
+    const last = moment.tz(endDate, user.timeZone).endOf("day");
+
+    while (curr.isSameOrBefore(last, "day")) {
+      dateRange.push(curr.format("YYYY-MM-DD"));
+      curr.add(1, "day");
+    }
+
+    const records = await AttendanceModel.find({
+      date: {
+        $gte: formattedStart,
+        $lte: formattedEnd,
+      },
+    }).populate("userId");
+
+    const userMap = new Map();
+
+    records.forEach((record) => {
+      const recordUser = record.userId;
+      if (!recordUser?._id) return;
+      const userKey = recordUser._id.toString();
+
+      if (!userMap.has(userKey)) {
+        userMap.set(userKey, {
+          userId: recordUser._id,
+          name: `${recordUser.first_name} ${recordUser.last_name}`,
+          email: recordUser.email,
+          status: recordUser.status,
+          attendance: {},
+          presentCount: 0,
+          absentCount: 0,
+          halfDayCount: 0,
+          outOfDays: 0
+        });
+      }
+
+      const formattedDate = moment(record.date).format("YYYY-MM-DD");
+      const userData = userMap.get(userKey);
+      userData.attendance[formattedDate] = record.status;
+
+      if (record.status.toLowerCase() === "present") userData.presentCount++;
+      if (record.status.toLowerCase() === "absent") userData.absentCount++;
+      if (record.status.toLowerCase() === "half day") userData.halfDayCount++;
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Attendance Report");
+
+    const columns = [
+      { header: "User ID", key: "userId", width: 25 },
+      { header: "Name", key: "name", width: 30 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "Status", key: "status", width: 15 },
+      ...dateRange.map((date) => ({ header: date, key: date, width: 15 })),
+      { header: "Total Present", key: "totalPresent", width: 15 },
+      { header: "Total Absent", key: "totalAbsent", width: 15 },
+      { header: "Total Half Day", key: "totalHalfDay", width: 15 },
+      { header: "Out of Days", key: "outOfDays", width: 15 },
+    ];
+
+    sheet.columns = columns;
+
+    for (const [, user] of userMap.entries()) {
+      const row = {
+        userId: user.userId.toString(),
+        name: user.name,
+        email: user.email,
+        status: user.status,
+      };
+
+      dateRange.forEach((date) => {
+        const status = user.attendance[date];
+        if (status) {
+          row[date] = status;
+        } else {
+          row[date] = "Absent";
+          user.absentCount++;
+        }
+      });
+
+      row.totalPresent = user.presentCount;
+      row.totalAbsent = user.absentCount;
+      row.totalHalfDay = user.halfDayCount;
+      row.outOfDays = dateRange.length;
+
+      sheet.addRow(row);
+    }
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Attendance_Report_${startDate}_to_${endDate}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
+
+export const getAllUsersPayrollReport = async (req, res) => {
+  try {
+    const { startDate, endDate, department, location } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ success: false, message: "Start date and End date are required" });
+    }
+
+    const start = moment(startDate).startOf("day").toDate();
+    const end = moment(endDate).endOf("day").toDate();
+    const month = moment(startDate).format("MMMM");
+    const year = moment(startDate).format("YYYY");
+
+    // Filter users
+    let userQuery = { role: { $in: ["employee", "hr"] } };
+    if (department) userQuery.department = department;
+    if (location) userQuery.location = location;
+
+    const allUsers = await userModel.find(userQuery);
+
+    // Payroll records
+    const payrolls = await payrollModel.find({ payDate: { $gte: start, $lte: end } });
+    const payrollMap = {};
+    payrolls.forEach(p => payrollMap[p.userId.toString()] = p);
+
+    // Leave records
+    const leaveRecords = await LeaveModel.find({
+      fromDate: { $lte: end },
+      toDate: { $gte: start }
+    });
+    const leaveMap = {};
+    leaveRecords.forEach(lv => {
+      const id = lv.userId.toString();
+      if (!leaveMap[id]) leaveMap[id] = { sick: 0, casual: 0, unpaid: 0, total: 0 };
+
+      const from = moment.max(moment(lv.fromDate), moment(start));
+      const to = moment.min(moment(lv.toDate), moment(end));
+      let days = to.diff(from, "days") + 1;
+      if (lv.leaveType === "half day") days = 0.5;
+
+      if (lv.leaveType === "sick") leaveMap[id].sick += days;
+      else if (lv.leaveType === "casual") leaveMap[id].casual += days;
+      else if (lv.leaveType === "unpaid") leaveMap[id].unpaid += days;
+      else leaveMap[id].casual += days;
+
+      leaveMap[id].total += days;
+    });
+
+    // Attendance - calculate overtime in hours
+    const attendance = await AttendanceModel.find({
+      status: "Over Time",
+      date: { $gte: start, $lte: end }
+    });
+    const overtimeMap = {};
+    attendance.forEach(a => {
+      if (!a.inTime || !a.outTime) return;
+      const id = a.userId.toString();
+      const hours = moment(a.outTime).diff(moment(a.inTime), 'hours', true);
+      if (!overtimeMap[id]) overtimeMap[id] = 0;
+      overtimeMap[id] += hours;
+    });
+
+    // Excel generation
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Payroll Report");
+
+    sheet.columns = [
+      { header: "Name", key: "name", width: 25 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "Department", key: "department", width: 15 },
+      { header: "Location", key: "location", width: 15 },
+      { header: "Joining Date", key: "joiningDate", width: 15 },
+      { header: "Month", key: "month", width: 10 },
+      { header: "Year", key: "year", width: 10 },
+      { header: "Salary", key: "salary", width: 15 },
+      { header: "Basic Salary", key: "basicSalary", width: 15 },
+      { header: "HRA", key: "hra", width: 15 },
+      { header: "Medical Allowance", key: "medicalAllowance", width: 15 },
+      { header: "Traveling Allowance", key: "travelingAllowance", width: 15 },
+      { header: "Gross Salary", key: "grossSalary", width: 18 },
+      { header: "Bonuses", key: "bonuses", width: 12 },
+      { header: "Overtime (hrs)", key: "overtime", width: 15 },
+      { header: "Loan Deduction", key: "loanDeduction", width: 15 },
+      { header: "PT Deduction", key: "ptDeduction", width: 15 },
+      { header: "PF", key: "pf", width: 12 },
+      { header: "UNA Number", key: "una", width: 12 },
+      { header: "Total Deductions", key: "totalDeductions", width: 18 },
+      { header: "Net Salary", key: "netSalary", width: 15 },
+      { header: "Payment Method", key: "paymentMethod", width: 18 },
+      { header: "Account No", key: "accountNumber", width: 20 },
+      { header: "Bank Name", key: "bankName", width: 20 },
+      { header: "Sick Leave", key: "sickLeave", width: 12 },
+      { header: "Casual Leave", key: "casualLeave", width: 12 },
+      { header: "Unpaid Leave", key: "unpaidLeave", width: 12 },
+      { header: "Total Leave", key: "totalLeaves", width: 12 },
+      // { header: "Status", key: "status", width: 15 },
+      { header: "Pay Date", key: "payDate", width: 18 }
+    ];
+
+    allUsers.forEach(user => {
+      console.log("user",user)
+      const id = user._id.toString();
+      const p = payrollMap[id];
+      const lv = leaveMap[id] || {};
+      const overtime = overtimeMap[id]?.toFixed(2) || 0;
+
+      sheet.addRow({
+        name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+        email: user.email || '-',
+        department: user.department || '-',
+        location: user.location || '-',
+        joiningDate: user.joining_date ? moment(user.joining_date).format("YYYY-MM-DD") : '-',
+        month,
+        year,
+        basicSalary: p?.basicSalary ?? '-',
+        salary: user?.salary ?? '-',
+        hra: p?.hra ?? '-',
+        medicalAllowance: p?.medicalAllowance ?? '-',
+        travelingAllowance: p?.travelingAllowance ?? '-',
+        grossSalary: p?.grossSalary ?? '-',
+        bonuses: p?.bonuses ?? '-',
+        overtime,
+        loanDeduction: p?.loanDeduction ?? '-',
+        ptDeduction: p?.ptDeduction ?? '-',
+        pf: p?.pf ?? '-',
+        una: p?.una ?? '-',
+        totalDeductions: p?.totalDeductions ?? '-',
+        netSalary: p?.netSalary ?? '-',
+        paymentMethod: p?.paymentMethod ?? '-',
+        accountNumber: p?.accountNumber ?? '-',
+        bankName: p?.bankName ?? '-',
+        sickLeave: lv.sick,
+        casualLeave: lv.casual,
+        unpaidLeave: lv.unpaid,
+        totalLeaves: lv.total,
+        status: p?.status ?? '-',
+        payDate: p?.payDate ? moment(p.payDate).format("YYYY-MM-DD") : '-'
+      });
+    });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename=Payroll_Report_${startDate}_to_${endDate}.xlsx`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Payroll report error:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+  }
+};
+
+
+
+
+export const getAllUsersLeaveReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const { _id } = req.user;
+
+    const user = await userModel.findById(_id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ success: false, message: 'Start date and end date are required' });
+    }
+
+    const formattedStart = moment.tz(startDate, user.timeZone).startOf('day').toDate();
+    const formattedEnd = moment.tz(endDate, user.timeZone).endOf('day').toDate();
+
+    const leaves = await LeaveModel.find({
+      fromDate: { $lte: formattedEnd },
+      toDate: { $gte: formattedStart }
+    }).populate('userId');
+
+    const leaveMap = new Map();
+
+    leaves.forEach((leave) => {
+      const recordUser = leave.userId;
+      if (!recordUser?._id) return;
+
+      const userKey = recordUser._id.toString();
+
+      if (!leaveMap.has(userKey)) {
+        leaveMap.set(userKey, {
+          // userId: recordUser._id,
+          name: `${recordUser.first_name} ${recordUser.last_name}`,
+          email: recordUser.email,
+          status: recordUser.status,
+          sickLeave: 0,
+          unPaidLeave: 0,
+          leaveBalance: leave.leaveBalance || 0,
+          leaves: [],
+        });
+      }
+
+      const totalDays = moment(leave.toDate).diff(moment(leave.fromDate), 'days') + 1;
+
+      // Aggregate leave counts
+      leaveMap.get(userKey).sickLeave += leave.sickLeave || 0;
+      leaveMap.get(userKey).unPaidLeave += leave.unPaidLeave || 0;
+
+      leaveMap.get(userKey).leaves.push({
+        reason: leave.reason,
+        fromDate: moment(leave.fromDate).format("YYYY-MM-DD"),
+        toDate: moment(leave.toDate).format("YYYY-MM-DD"),
+        leaveType: leave.leaveType,
+        status: leave.status,
+        appliedAt: moment(leave.appliedAt).format("YYYY-MM-DD"),
+        totalDays
+      });
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Leave Report');
+
+    sheet.columns = [
+      // { header: 'User ID', key: 'userId', width: 25 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Leave Type', key: 'leaveType', width: 15 },
+      { header: 'Reason', key: 'reason', width: 30 },
+      { header: 'From Date', key: 'fromDate', width: 15 },
+      { header: 'To Date', key: 'toDate', width: 15 },
+      { header: 'Total Days', key: 'totalDays', width: 15 },
+      { header: 'Leave Status', key: 'leaveStatus', width: 15 },
+      { header: 'Applied At', key: 'appliedAt', width: 20 },
+      { header: 'Sick Leave Taken', key: 'sickLeave', width: 15 },
+      { header: 'Unpaid Leave Taken', key: 'unPaidLeave', width: 15 },
+      { header: 'Leave Balance', key: 'leaveBalance', width: 15 },
+    ];
+
+    for (const [, user] of leaveMap.entries()) {
+      user.leaves.forEach((lv) => {
+        sheet.addRow({
+          // userId: user.userId.toString(),
+          name: user.name,
+          email: user.email,
+          status: user.status,
+          leaveType: lv.leaveType,
+          reason: lv.reason,
+          fromDate: lv.fromDate,
+          toDate: lv.toDate,
+          totalDays: lv.totalDays,
+          leaveStatus: lv.status,
+          appliedAt: lv.appliedAt,
+          sickLeave: user.sickLeave,
+          unPaidLeave: user.unPaidLeave,
+          leaveBalance: user.leaveBalance,
+        });
+      });
+    }
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Leave_Report_${startDate}_to_${endDate}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong',
+      error: error.message,
+    });
   }
 };

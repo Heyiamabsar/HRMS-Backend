@@ -313,8 +313,6 @@ export const getLoginUserAllLeaves = async (req, res) => {
   }
 };
 
-
-
 export const getAllUsersLeaveReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
