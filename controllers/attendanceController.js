@@ -7,6 +7,7 @@ import LeaveModel from "../models/leaveModel.js";
 import ExcelJS from "exceljs";
 import path from "path";
 import fs from "fs";
+import { sendNotification } from "../utils/notificationutils.js";
 
 // Punch IN
 export const markInTime = async (req, res) => {
@@ -34,6 +35,15 @@ export const markInTime = async (req, res) => {
       todayStatus = "Present";
     } else {
       todayStatus = "Half Day";
+
+      await sendNotification({
+      forRoles: ["admin", "hr"], 
+      title: "Late Punch IN Alert",
+      message: `${req.user.name} Logged in late today at ${moment(inTime).tz(userTimeZone).format("hh:mm AM")}`,
+      link: `/employee/${userId}/profile`,
+      type: "user",
+      performedBy: req.user._id
+});
     }
 
     const attendance = await AttendanceModel.findOneAndUpdate(
@@ -63,7 +73,7 @@ export const markOutTime = async (req, res) => {
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
 
     const attendance = await AttendanceModel.findOne({ userId, date });
-        const holiday = await holidayModel.findOne({ date, isOptional: false });
+    const holiday = await holidayModel.findOne({ date, isOptional: false });
 
     const inTime = moment(attendance.inTime).tz(userTimeZone);
     const nineFifteen = moment(`${date} 09:15 AM`, "YYYY-MM-DD hh:mm A").tz(
@@ -127,6 +137,14 @@ export const markOutTime = async (req, res) => {
         attendance.status = "Over Time";
         todayStatus = "Over Time"
         await attendance.save();
+        await sendNotification({
+        forRoles: ["admin", "hr"], 
+        title: `${req.user.name} Working Over Time`,
+        message:`${req.user.name} Working as on Holiday as Over Time`,
+        link: `/employee/${employee._id}/profile`,
+        type: "user",
+        performedBy: req.user._id
+      });
       }
     }
 

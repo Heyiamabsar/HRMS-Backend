@@ -1,5 +1,71 @@
 import { exportUserToExcel, getExcelData, loadAllUserToExcel } from "../middleware/payroll.js"
 import _ from 'lodash'; 
+import payrollModel from "../models/payrollModel.js";
+import moment from "moment-timezone";
+
+
+export const addPayrollBasicInfo = async (req, res) => {
+  try {
+    const {
+      basicSalary,
+      medicalAllowance,
+      travelingAllowance,
+      hra,
+      totalAllowances,
+      totalDeductions,
+      bonuses,
+      paymentMethod,
+      accountNumber,
+      bankName,
+      ifscCode,
+      pfDeduction,
+      loanDeduction,
+      ptDeduction,
+      una,
+      payDate,
+      status
+    } = req.body;
+    const userId = req.params.id;
+
+    const payroll = new payrollModel({
+      userId,
+      basicSalary,
+      medicalAllowance,
+      travelingAllowance,
+      hra,
+      totalAllowances,
+      totalDeductions,
+      bonuses,
+      paymentMethod,
+      accountNumber,
+      bankName,
+      ifscCode,
+      pfDeduction,
+      loanDeduction,
+      ptDeduction,
+      una,
+      payDate,
+      status: status || 'pending'
+    });
+
+    await payroll.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Payroll created successfully",
+      data: payroll
+    });
+
+  } catch (error) {
+    console.error("Payroll creation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message
+    });
+  }
+};
+
 
 
 export const exportAllUsersToExcel = async (req, res) => {

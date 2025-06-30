@@ -2,6 +2,7 @@
 
 import moment from "moment";
 import holidayModel from "../models/holidayModule.js";
+import { sendNotification } from "../utils/notificationutils.js";
 
 //  Add custom holiday
 export const addCustomHoliday = async (req, res) => {
@@ -13,12 +14,20 @@ export const addCustomHoliday = async (req, res) => {
     // if (moment(date).day() === 0) return res.status(400).json({success:false ,statusCode:400, message: "Cannot add holidays on Sundays" });
 
     const holidayDate = moment(date).startOf("day");
-    
-    
+        
     const existing = await holidayModel.findOne({ date: holidayDate });
     if (existing) return res.status(400).json({success:false ,statusCode:400, message: "Holiday already exists" });
     const holiday = new holidayModel({ date: holidayDate, reason, isCustom: true , isOptional: isOptional || false });
     await holiday.save();
+
+    await sendNotification({
+      forRoles: ["admin", "hr"], 
+      title: "Custom Holiday Added",
+      message: `${req.user.name} added a new custom holiday: ${holiday.reason}`,
+      link: `/holiday/${holiday._id}/details`,
+      type: "admin",
+      performedBy: req.user._id
+    });    
 
     res.status(201).json({ success:true ,statusCode:201, message: "Custom holiday added", holiday });
   } catch (error) {
@@ -57,6 +66,15 @@ export const updateHoliday = async (req, res) => {
     holiday.isOptional = isOptional;
   }
     await holiday.save();
+
+      await sendNotification({
+        forRoles: ["admin", "hr"],
+        title: "Custom Holiday Updated",
+        message: `${req.user.name} updated a custom holiday: ${holiday.reason}`,
+        link: `/holiday/${holiday._id}/details`,
+        type: "admin",
+        performedBy: req.user._id
+      });
 
     res.status(200).json({success:true , statusCode:200,   message: "Holiday updated", holiday });
   } catch (error) {

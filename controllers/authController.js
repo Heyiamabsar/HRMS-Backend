@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import requestIp from 'request-ip';
 import geoip from 'geoip-lite';
 import userModel from '../models/userModel.js';
+import { sendNotification } from '../utils/notificationutils.js';
 dotenv.config();
 
 // testController
@@ -21,6 +22,15 @@ export const register = async (req, res) => {
     const user = await userModel.create(req.body);
     const userObj = user.toObject();
     delete userObj.password;
+
+        await sendNotification({
+      forRoles: ["admin", "hr"], 
+      title: "New Employee Joined",
+      message: `${req.user.name} added a new employee: ${user.name}`,
+      link: `/employee/${user._id}/profile`,
+      type: "admin",
+      performedBy: req.user._id
+    });
 
     res.status(201).json({success : true,  statusCode: 201,
       message: 'Users Created successfully', user: userObj});

@@ -1,48 +1,74 @@
 import mongoose from 'mongoose';
 
 const PayrollSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User',  },
-  User: { type: mongoose.Schema.Types.ObjectId, ref: 'User',  },
-  month: { type: String },
-  year: { type: Number},  
-  
-  present: { type: Number},
-  absent: { type: Number},
-  halfDay: { type: Number},
-  unpaid: { type: Number},
-  sick: { type: Number},
-  overtime: { type: Number},
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
 
+  },
+  User: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
 
+  },
+  month: { 
+    type: String, 
+    required: false, 
+    enum: [
+      'January', 'February', 'March', 'April', 'May', 'June', 
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ] 
+  },
+  year: { 
+    type: Number, 
+    required: false, 
+    min: 2000 
+  },
 
+  present: { type: Number, default: 0, min: 0 },
+  absent: { type: Number, default: 0, min: 0 },
+  halfDay: { type: Number, default: 0, min: 0 },
+  unpaid: { type: Number, default: 0, min: 0 },
+  sick: { type: Number, default: 0, min: 0 },
+  overtime: { type: Number, default: 0, min: 0 },
 
-  basicSalary: { type: Number },
-  grossSalary: { type: Number },
-  netSalary: { type: Number },
-  medicalAllowance: { type: Number },
-  travelingAllowance: { type: Number },
-  hra: { type: Number },
+  basicSalary: { type: Number, required: true, min: 0 },
+  grossSalary: { type: Number, required: false, min: 0 },
+  netSalary: { type: Number, required: false, min: 0 },
 
+  medicalAllowance: { type: Number, default: 0, min: 0 },
+  travelingAllowance: { type: Number, default: 0, min: 0 },
+  hra: { type: Number, default: 0, min: 0 },
 
-  totalAllowances: { type: Number },
-  totalDeductions: {type: String },
-  bonuses: { type: Number },
+  totalAllowances: { type: Number, default: 0, min: 0 },
+  totalDeductions: { type: Number, default: 0, min: 0 },
+  bonuses: { type: Number, default: 0, min: 0 },
 
-  paymentMethod: {type: String },
-  accountNumber: {type: Number },
-  bankName: {type: String },
-  ifscCode: {type: String },
-  pfDeduction: {type: Number },
-  loanDeduction: { type: Number },
-  ptDeduction: { type: Number },
-  una: {type: Number },
+  paymentMethod: { 
+    type: String, 
+    enum: ['Bank Transfer', 'Cash', 'Cheque', 'UPI'],
+    required: true 
+  },
+  accountNumber: { type: String, default: '', trim: true },
+  bankName: { type: String, default: '', trim: true },
+  ifscCode: { type: String, default: '', trim: true },
+
+  pfDeduction: { type: Number, default: 0, min: 0 },
+  loanDeduction: { type: Number, default: 0, min: 0 },
+  ptDeduction: { type: Number, default: 0, min: 0 },
+  una: { type: Number, default: 0, min: 0 },
+
   generatedAt: { type: Date, default: Date.now },
 
-  status: { type: String, enum: ['pending', 'processed', 'paid'], default: 'pending' },
-  payDate: { type: Date }
+  status: { 
+    type: String, 
+    enum: ['pending', 'processed', 'paid'], 
+    default: 'pending' 
+  },
+  payDate: { type: Date, required: true }
 
 }, { timestamps: true });
-90
+
 const payrollModel= mongoose.model('Payroll', PayrollSchema);
 
 export default payrollModel

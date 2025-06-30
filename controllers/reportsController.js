@@ -40,7 +40,7 @@ export const getOverallEmployeeReport = async (req, res) => {
     const reportMap = new Map();
 
     allUsers.forEach(emp => {
-      reportMap.set(emp._id.toString(), {
+      reportMap.set(emp?._id?.toString(), {
         name: `${emp.first_name} ${emp.last_name}`,
         email: emp.email,
         role: emp.role,
@@ -88,7 +88,7 @@ export const getOverallEmployeeReport = async (req, res) => {
     }
 
     leaveRecords.forEach(lv => {
-      const emp = reportMap.get(lv.userId?.toString());
+      const emp = reportMap.get(lv?.userId?.toString());
       if (!emp) return;
 
       const leaveStart = moment.max(moment(lv.fromDate), moment(start));
@@ -206,7 +206,7 @@ export const getAllUsersAttendanceReport = async (req, res) => {
     records.forEach((record) => {
       const recordUser = record.userId;
       if (!recordUser?._id) return;
-      const userKey = recordUser._id.toString();
+      const userKey = recordUser?._id?.toString();
 
       if (!userMap.has(userKey)) {
         userMap.set(userKey, {
@@ -250,10 +250,10 @@ export const getAllUsersAttendanceReport = async (req, res) => {
 
     for (const [, user] of userMap.entries()) {
       const row = {
-        userId: user.userId.toString(),
-        name: user.name,
-        email: user.email,
-        status: user.status,
+        userId: user?.userId?.toString(),
+        name: user?.name,
+        email: user?.email,
+        status: user?.status,
       };
 
       dateRange.forEach((date) => {
@@ -319,7 +319,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
     // Payroll records
     const payrolls = await payrollModel.find({ payDate: { $gte: start, $lte: end } });
     const payrollMap = {};
-    payrolls.forEach(p => payrollMap[p.userId.toString()] = p);
+    payrolls.forEach(p => payrollMap[p?.userId?.toString()] = p);
 
     // Leave records
     const leaveRecords = await LeaveModel.find({
@@ -328,7 +328,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
     });
     const leaveMap = {};
     leaveRecords.forEach(lv => {
-      const id = lv.userId.toString();
+      const id = lv?.userId?.toString();
       if (!leaveMap[id]) leaveMap[id] = { sick: 0, casual: 0, unpaid: 0, total: 0 };
 
       const from = moment.max(moment(lv.fromDate), moment(start));
@@ -352,7 +352,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
     const overtimeMap = {};
     attendance.forEach(a => {
       if (!a.inTime || !a.outTime) return;
-      const id = a.userId.toString();
+      const id = a?.userId?.toString();
       const hours = moment(a.outTime).diff(moment(a.inTime), 'hours', true);
       if (!overtimeMap[id]) overtimeMap[id] = 0;
       overtimeMap[id] += hours;
@@ -375,15 +375,12 @@ export const getAllUsersPayrollReport = async (req, res) => {
       { header: "HRA", key: "hra", width: 15 },
       { header: "Medical Allowance", key: "medicalAllowance", width: 15 },
       { header: "Traveling Allowance", key: "travelingAllowance", width: 15 },
-      { header: "Gross Salary", key: "grossSalary", width: 18 },
       { header: "Bonuses", key: "bonuses", width: 12 },
       { header: "Overtime (hrs)", key: "overtime", width: 15 },
       { header: "Loan Deduction", key: "loanDeduction", width: 15 },
       { header: "PT Deduction", key: "ptDeduction", width: 15 },
       { header: "PF", key: "pf", width: 12 },
       { header: "UNA Number", key: "una", width: 12 },
-      { header: "Total Deductions", key: "totalDeductions", width: 18 },
-      { header: "Net Salary", key: "netSalary", width: 15 },
       { header: "Payment Method", key: "paymentMethod", width: 18 },
       { header: "Account No", key: "accountNumber", width: 20 },
       { header: "Bank Name", key: "bankName", width: 20 },
@@ -391,13 +388,16 @@ export const getAllUsersPayrollReport = async (req, res) => {
       { header: "Casual Leave", key: "casualLeave", width: 12 },
       { header: "Unpaid Leave", key: "unpaidLeave", width: 12 },
       { header: "Total Leave", key: "totalLeaves", width: 12 },
-      // { header: "Status", key: "status", width: 15 },
+      { header: "Total Deductions", key: "totalDeductions", width: 18 },
+      { header: "Gross Salary", key: "grossSalary", width: 18 },
+      { header: "Net Salary", key: "netSalary", width: 15 },
+      { header: "Status", key: "status", width: 15 },
       { header: "Pay Date", key: "payDate", width: 18 }
     ];
 
     allUsers.forEach(user => {
       console.log("user",user)
-      const id = user._id.toString();
+      const id = user?._id?.toString();
       const p = payrollMap[id];
       const lv = leaveMap[id] || {};
       const overtime = overtimeMap[id]?.toFixed(2) || 0;
@@ -431,7 +431,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
         casualLeave: lv.casual,
         unpaidLeave: lv.unpaid,
         totalLeaves: lv.total,
-        status: p?.status ?? '-',
+        status: p?.status ?? 'Pending',
         payDate: p?.payDate ? moment(p.payDate).format("YYYY-MM-DD") : '-'
       });
     });
@@ -445,8 +445,6 @@ export const getAllUsersPayrollReport = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
   }
 };
-
-
 
 
 export const getAllUsersLeaveReport = async (req, res) => {
@@ -477,7 +475,7 @@ export const getAllUsersLeaveReport = async (req, res) => {
       const recordUser = leave.userId;
       if (!recordUser?._id) return;
 
-      const userKey = recordUser._id.toString();
+      const userKey = recordUser?._id?.toString();
 
       if (!leaveMap.has(userKey)) {
         leaveMap.set(userKey, {

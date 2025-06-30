@@ -15,6 +15,7 @@ import cloudExcelRouter from "./routes/cloudExcelRoutes.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import reportRouter from "./routes/reportsRoutes.js";
+import notificationRouter from "./routes/notifyRoutes.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -43,6 +44,7 @@ app.use('/api/leaves', leaveRouter);
 app.use('/api/report', reportRouter);
 app.use('/api/holidays', holidayRouter);
 app.use('/api/cloud_excel', cloudExcelRouter);
+app.use('/api/notifications', notificationRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

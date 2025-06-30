@@ -47,6 +47,22 @@ export const applyLeave = async (req, res) => {
       status: "pending",
     });
 
+    await sendNotification({
+      forRoles: ["admin", "hr"], 
+      title: "New Leave Request",
+      message: `${req.user.name} requested leave from ${leave.fromDate} to ${leave.toDate}`,
+      link: `/admin/leave-requests`,
+      type: "user",
+      performedBy: req.user._id 
+    });
+    await sendNotification({
+      userId: req.user._id, 
+      title: "Leave Request Submitted",
+      message: `Your leave request from ${leave.fromDate} to ${leave.toDate} has been submitted.`,
+      link: `/user/leave-status`,
+      type: "user"
+    });
+
     res.status(201).json({
       success: true,
       statusCode: 201,
@@ -180,6 +196,24 @@ export const updateLeaveStatus = async (req, res) => {
     leave.status = status;
     await user.save();
     await leave.save();
+
+    await sendNotification({
+      userId: leave.employee, 
+      title: `Your Leave Status Updated`, 
+      message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${req.user.name}`,
+      link: `/user/leave-status`,
+      type: "admin",
+      performedBy: req.user._id
+    });
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: `${user.name}'s Leave Status Updated`, 
+      message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${req.user.name}`,
+      link: `/user/leave-status`,
+      type: "admin",
+      performedBy: req.user._id
+    });
+
 
     res.status(200).json({
       success: true,
