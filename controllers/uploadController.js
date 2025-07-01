@@ -1,6 +1,7 @@
 import UploadModel from "../models/fileUploadModel.js";
 import mongoose from 'mongoose';
 import userModel from "../models/userModel.js";
+import { sendNotification } from "../utils/notificationutils.js";
 
 
 
@@ -42,6 +43,15 @@ export const handleFileUpload = async (req, res) => {
     const populatedUpload = await UploadModel.findById(savedUpload._id).populate({
       path: 'user',
       select: '_id name email role' 
+    });
+
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "New Files Uploaded",
+      message: `${req.user.name} uploaded ${req.files.length} file(s): "${newUpload.title}"`,
+      link: `/uploads/${savedUpload._id}`,
+      type: "admin",
+      performedBy: req.user._id
     });
 
     res.status(200).json({
@@ -115,6 +125,15 @@ export const deleteUpload = async (req, res) => {
     if (!upload) {
       return res.status(404).json({ success: false, statusCode: 404, error: 'Upload not found' });
     }
+
+      await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "File Upload Deleted",
+      message: `${req.user.name} deleted uploaded files titled "${upload.title}"`,
+      link: `/uploads`,
+      type: "admin",
+      performedBy: req.user._id
+    });
 
     res.status(200).json({ success: true, statusCode: 200, message: 'Upload deleted successfully' });
   } catch (error) {

@@ -2,6 +2,8 @@ import { exportUserToExcel, getExcelData, loadAllUserToExcel } from "../middlewa
 import _ from 'lodash'; 
 import payrollModel from "../models/payrollModel.js";
 import moment from "moment-timezone";
+import userModel from "../models/userModel.js";
+import { sendNotification } from "../utils/notificationutils.js";
 
 
 export const addPayrollBasicInfo = async (req, res) => {
@@ -49,6 +51,27 @@ export const addPayrollBasicInfo = async (req, res) => {
     });
 
     await payroll.save();
+
+      const employee = await userModel.findById(userId);
+
+    await sendNotification({
+      userId: employee._id,
+      title: "Payroll Generated",
+      message: `Your payroll for ${payDate} has been generated.`,
+      link: `/user/payroll/${payroll._id}`,
+      type: "admin",
+      performedBy: req.user._id
+    });
+
+
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "Payroll Created",
+      message: `${req.user.name} created payroll for ${employee.name}`,
+      link: `/admin/payroll/${payroll._id}`,
+      type: "admin",
+      performedBy: req.user._id
+    });
 
     res.status(201).json({
       success: true,

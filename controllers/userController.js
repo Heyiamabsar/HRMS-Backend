@@ -1,6 +1,7 @@
 import User from '../models/userModel.js';
 import moment from 'moment-timezone';
 import bcrypt from 'bcryptjs';
+import { sendNotification } from '../utils/notificationutils.js';
 
 
 // Save User Time Zone
@@ -107,6 +108,15 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
     }
 
+      await sendNotification({
+        forRoles: ["admin", "hr"],
+        title: "User Updated",
+        message: `${req.user.name} updated details of ${updatedUser.name}`,
+        link: `/admin/users/${updatedUser._id}`,
+        type: "admin",
+        performedBy: req.user._id
+      });
+
     res.status(200).json({
       statusCode: 200,
       success: true,
@@ -142,6 +152,25 @@ export const updateUserPassword = async (req, res) => {
       return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
     }
 
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "Password Updated",
+      message: `${req.user.name} updated the password for a user`,
+      link: `/admin/users/${req.params.id}`,
+      type: "admin",
+      performedBy: req.user._id
+    });
+
+    await sendNotification({
+      userId: updatedUser._id,
+      title: "Your Password was Updated",
+      message: `Your account password was updated by ${req.user.name}.`,
+      link: `/user/profile`,
+      type: "user",
+      performedBy: req.user._id
+    });
+
+
    return res.status(200).json({
       statusCode: 200,
       success: true,
@@ -165,6 +194,15 @@ export const deleteUser = async (req, res) => {
     if (!deletedUser) {
       return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
     }
+
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "User Deleted",
+      message: `${req.user.name} deleted user ${deletedUser.name}`,
+      link: `/admin/users`,
+      type: "admin",
+      performedBy: req.user._id
+    });
 
     res.status(200).json({ statusCode: 200, success: true, message: 'User deleted successfully' });
   } catch (error) {

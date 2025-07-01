@@ -3,6 +3,9 @@
 import moment from "moment";
 import holidayModel from "../models/holidayModule.js";
 import { sendNotification } from "../utils/notificationutils.js";
+import userModel from "../models/userModel.js";
+
+
 
 //  Add custom holiday
 export const addCustomHoliday = async (req, res) => {
@@ -20,10 +23,24 @@ export const addCustomHoliday = async (req, res) => {
     const holiday = new holidayModel({ date: holidayDate, reason, isCustom: true , isOptional: isOptional || false });
     await holiday.save();
 
+    const users = await userModel.find({ role: "user" });
+
+    const notifications = users.map(user => ({
+      userId: user._id,
+      title: "Holiday Added",
+      message: "A new holiday has been added.",
+      link: "/user/holiday-calendar",
+      type: "admin",
+      performedBy: req.user._id
+    }));
+
+    await notifyModel.insertMany(notifications);
+
+
     await sendNotification({
       forRoles: ["admin", "hr"], 
-      title: "Custom Holiday Added",
-      message: `${req.user.name} added a new custom holiday: ${holiday.reason}`,
+      title: "Holiday Added",
+      message: `${req.user.name} added a new holiday: ${holiday.reason}`,
       link: `/holiday/${holiday._id}/details`,
       type: "admin",
       performedBy: req.user._id
@@ -66,6 +83,21 @@ export const updateHoliday = async (req, res) => {
     holiday.isOptional = isOptional;
   }
     await holiday.save();
+
+
+    const users = await userModel.find({ role: "user" });
+
+    const notifications = users.map(user => ({
+      userId: user._id,
+      title: "Holiday Updated",
+      message: "A new holiday has been added.",
+      link: "/user/holiday-calendar",
+      type: "admin",
+      performedBy: req.user._id
+    }));
+
+      await notifyModel.insertMany(notifications);
+
 
       await sendNotification({
         forRoles: ["admin", "hr"],
