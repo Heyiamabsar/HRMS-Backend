@@ -11,6 +11,11 @@ const PayrollSchema = new mongoose.Schema({
     ref: 'User',
 
   },
+  modifiedBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
+
+  },
   month: { 
     type: String, 
     required: false, 
@@ -62,10 +67,11 @@ const PayrollSchema = new mongoose.Schema({
 
   status: { 
     type: String, 
-    enum: ['pending', 'processed', 'paid'], 
+    enum: ['pending', 'processed', 'paid','onHold'], 
     default: 'pending' 
   },
-  payDate: { type: Date, required: true }
+  payDate: { type: Date, required: true },
+  modifiedAt: { type: Date },
 
 }, { timestamps: true });
 

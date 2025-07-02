@@ -46,7 +46,7 @@ export const getOverallEmployeeReport = async (req, res) => {
         role: emp.role,
         salary: emp.salary || 0,
         salaryPerDay: (emp.salary || 0) / 30,
-        joiningDate: emp?.joining_date ? moment(emp?.joining_date).format('YYYY-MM-DD') : '-',
+        joiningDate: emp?.joining_date ? moment(emp?.joining_date).format('YYYY-MM-DD') : 0,
         present: 0,
         absent: 0,
         halfDay: 0,
@@ -77,12 +77,12 @@ export const getOverallEmployeeReport = async (req, res) => {
         const record = attendanceMap.get(`${id}_${date}`);
         if (!record || record.status?.toLowerCase() === 'absent') {
           emp.absent++;
-          emp.inOutTimes[date] = '-';
+          emp.inOutTimes[date] = 0;
         } else {
           const status = record.status?.toLowerCase();
           if (status === 'present') emp.present++;
           else if (status === 'half day') emp.halfDay++;
-          emp.inOutTimes[date] = `${record.inTime || '-'} - ${record.outTime || '-'}`;
+          emp.inOutTimes[date] = `${record.inTime || 0} - ${record.outTime || 0}`;
         }
       });
     }
@@ -362,38 +362,39 @@ export const getAllUsersPayrollReport = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Payroll Report");
 
-    sheet.columns = [
-      { header: "Name", key: "name", width: 25 },
-      { header: "Email", key: "email", width: 30 },
-      { header: "Department", key: "department", width: 15 },
-      { header: "Location", key: "location", width: 15 },
-      { header: "Joining Date", key: "joiningDate", width: 15 },
-      { header: "Month", key: "month", width: 10 },
-      { header: "Year", key: "year", width: 10 },
-      { header: "Salary", key: "salary", width: 15 },
-      { header: "Basic Salary", key: "basicSalary", width: 15 },
-      { header: "HRA", key: "hra", width: 15 },
-      { header: "Medical Allowance", key: "medicalAllowance", width: 15 },
-      { header: "Traveling Allowance", key: "travelingAllowance", width: 15 },
-      { header: "Bonuses", key: "bonuses", width: 12 },
-      { header: "Overtime (hrs)", key: "overtime", width: 15 },
-      { header: "Loan Deduction", key: "loanDeduction", width: 15 },
-      { header: "PT Deduction", key: "ptDeduction", width: 15 },
-      { header: "PF", key: "pf", width: 12 },
-      { header: "UNA Number", key: "una", width: 12 },
-      { header: "Payment Method", key: "paymentMethod", width: 18 },
-      { header: "Account No", key: "accountNumber", width: 20 },
-      { header: "Bank Name", key: "bankName", width: 20 },
-      { header: "Sick Leave", key: "sickLeave", width: 12 },
-      { header: "Casual Leave", key: "casualLeave", width: 12 },
-      { header: "Unpaid Leave", key: "unpaidLeave", width: 12 },
-      { header: "Total Leave", key: "totalLeaves", width: 12 },
-      { header: "Total Deductions", key: "totalDeductions", width: 18 },
-      { header: "Gross Salary", key: "grossSalary", width: 18 },
-      { header: "Net Salary", key: "netSalary", width: 15 },
-      { header: "Status", key: "status", width: 15 },
-      { header: "Pay Date", key: "payDate", width: 18 }
+      sheet.columns = [
+      { header: "name", key: "name", width: 25 },
+      { header: "email", key: "email", width: 30 },
+      { header: "department", key: "department", width: 15 },
+      { header: "location", key: "location", width: 15 },
+      { header: "joiningDate", key: "joiningDate", width: 15 },
+      { header: "month", key: "month", width: 10 },
+      { header: "year", key: "year", width: 10 },
+      { header: "salary", key: "salary", width: 15 },
+      { header: "basicSalary", key: "basicSalary", width: 15 },
+      { header: "hra", key: "hra", width: 15 },
+      { header: "medicalAllowance", key: "medicalAllowance", width: 15 },
+      { header: "travelingAllowance", key: "travelingAllowance", width: 15 },
+      { header: "bonuses", key: "bonuses", width: 12 },
+      { header: "overtime", key: "overtime", width: 15 },
+      { header: "loanDeduction", key: "loanDeduction", width: 15 },
+      { header: "ptDeduction", key: "ptDeduction", width: 15 },
+      { header: "pf", key: "pf", width: 12 },
+      { header: "una", key: "una", width: 12 },
+      { header: "paymentMethod", key: "paymentMethod", width: 18 },
+      { header: "accountNumber", key: "accountNumber", width: 20 },
+      { header: "bankName", key: "bankName", width: 20 },
+      { header: "sickLeave", key: "sickLeave", width: 12 },
+      { header: "casualLeave", key: "casualLeave", width: 12 },
+      { header: "unpaidLeave", key: "unpaidLeave", width: 12 },
+      { header: "totalLeaves", key: "totalLeaves", width: 12 },
+      { header: "totalDeductions", key: "totalDeductions", width: 18 },
+      { header: "grossSalary", key: "grossSalary", width: 18 },
+      { header: "netSalary", key: "netSalary", width: 15 },
+      { header: "status", key: "status", width: 15 },
+      { header: "payDate", key: "payDate", width: 18 }
     ];
+
 
     allUsers.forEach(user => {
       console.log("user",user)
@@ -404,35 +405,35 @@ export const getAllUsersPayrollReport = async (req, res) => {
 
       sheet.addRow({
         name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
-        email: user.email || '-',
-        department: user.department || '-',
-        location: user.location || '-',
-        joiningDate: user.joining_date ? moment(user.joining_date).format("YYYY-MM-DD") : '-',
+        email: user.email || '',
+        department: user.department || '',
+        location: user.location || '',
+        joiningDate: user.joining_date ? moment(user.joining_date).format("YYYY-MM-DD") : '',
         month,
         year,
-        basicSalary: p?.basicSalary ?? '-',
-        salary: user?.salary ?? '-',
-        hra: p?.hra ?? '-',
-        medicalAllowance: p?.medicalAllowance ?? '-',
-        travelingAllowance: p?.travelingAllowance ?? '-',
-        grossSalary: p?.grossSalary ?? '-',
-        bonuses: p?.bonuses ?? '-',
+        basicSalary: p?.basicSalary ?? 0,
+        salary: user?.salary ?? 0,
+        hra: p?.hra ?? 0,
+        medicalAllowance: p?.medicalAllowance ?? 0,
+        travelingAllowance: p?.travelingAllowance ?? 0,
+        grossSalary: p?.grossSalary ?? 0,
+        bonuses: p?.bonuses ?? 0,
         overtime,
-        loanDeduction: p?.loanDeduction ?? '-',
-        ptDeduction: p?.ptDeduction ?? '-',
-        pf: p?.pf ?? '-',
-        una: p?.una ?? '-',
-        totalDeductions: p?.totalDeductions ?? '-',
-        netSalary: p?.netSalary ?? '-',
-        paymentMethod: p?.paymentMethod ?? '-',
-        accountNumber: p?.accountNumber ?? '-',
-        bankName: p?.bankName ?? '-',
+        loanDeduction: p?.loanDeduction ?? 0,
+        ptDeduction: p?.ptDeduction ?? 0,
+        pf: p?.pf ?? 0,
+        una: p?.una ?? 0,
+        totalDeductions: p?.totalDeductions ?? 0,
+        netSalary: p?.netSalary ?? 0,
+        paymentMethod: p?.paymentMethod ?? 0,
+        accountNumber: p?.accountNumber ?? 0,
+        bankName: p?.bankName ?? '',
         sickLeave: lv.sick,
         casualLeave: lv.casual,
         unpaidLeave: lv.unpaid,
         totalLeaves: lv.total,
         status: p?.status ?? 'Pending',
-        payDate: p?.payDate ? moment(p.payDate).format("YYYY-MM-DD") : '-'
+        payDate: p?.payDate ? moment(p.payDate).format("YYYY-MM-DD") : ''
       });
     });
 
