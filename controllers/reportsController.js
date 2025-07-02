@@ -389,10 +389,10 @@ export const getAllUsersPayrollReport = async (req, res) => {
       { header: "unpaidLeave", key: "unpaidLeave", width: 12 },
       { header: "totalLeaves", key: "totalLeaves", width: 12 },
       { header: "totalDeductions", key: "totalDeductions", width: 18 },
+      { header: "status", key: "status", width: 15 },
+      { header: "payDate", key: "payDate", width: 18 },
       { header: "grossSalary", key: "grossSalary", width: 18 },
       { header: "netSalary", key: "netSalary", width: 15 },
-      { header: "status", key: "status", width: 15 },
-      { header: "payDate", key: "payDate", width: 18 }
     ];
 
 
