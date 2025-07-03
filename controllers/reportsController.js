@@ -379,7 +379,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
       { header: "overtime", key: "overtime", width: 15 },
       { header: "loanDeduction", key: "loanDeduction", width: 15 },
       { header: "ptDeduction", key: "ptDeduction", width: 15 },
-      { header: "pf", key: "pf", width: 12 },
+      { header: "pfDeduction", key: "pfDeduction", width: 12 },
       { header: "una", key: "una", width: 12 },
       { header: "paymentMethod", key: "paymentMethod", width: 18 },
       { header: "accountNumber", key: "accountNumber", width: 20 },
@@ -391,6 +391,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
       { header: "totalDeductions", key: "totalDeductions", width: 18 },
       { header: "status", key: "status", width: 15 },
       { header: "payDate", key: "payDate", width: 18 },
+      { header: "payRollId", key: "payrollId", width: 18 },
       { header: "grossSalary", key: "grossSalary", width: 18 },
       { header: "netSalary", key: "netSalary", width: 15 },
     ];
@@ -411,7 +412,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
         joiningDate: user.joining_date ? moment(user.joining_date).format("YYYY-MM-DD") : '',
         month,
         year,
-        basicSalary: p?.basicSalary ?? 0,
+        basicSalary: p?.basicSalary || 0,
         salary: user?.salary ?? 0,
         hra: p?.hra ?? 0,
         medicalAllowance: p?.medicalAllowance ?? 0,
@@ -421,21 +422,23 @@ export const getAllUsersPayrollReport = async (req, res) => {
         overtime,
         loanDeduction: p?.loanDeduction ?? 0,
         ptDeduction: p?.ptDeduction ?? 0,
-        pf: p?.pf ?? 0,
+        pfDeduction: p?.pfDeduction ?? 0,
         una: p?.una ?? 0,
         totalDeductions: p?.totalDeductions ?? 0,
         netSalary: p?.netSalary ?? 0,
-        paymentMethod: p?.paymentMethod ?? 0,
+        paymentMethod: p?.paymentMethod || 'Bank Transfer',
         accountNumber: p?.accountNumber ?? 0,
         bankName: p?.bankName ?? '',
         sickLeave: lv.sick,
         casualLeave: lv.casual,
         unpaidLeave: lv.unpaid,
         totalLeaves: lv.total,
+        payrollId: p?._id?.toString() ?? '',
         status: p?.status ?? 'Pending',
         payDate: p?.payDate ? moment(p.payDate).format("YYYY-MM-DD") : ''
       });
     });
+    console.log("payrollMap",payrollMap)
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename=Payroll_Report_${startDate}_to_${endDate}.xlsx`);

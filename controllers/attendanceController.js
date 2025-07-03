@@ -13,6 +13,7 @@ import { sendNotification } from "../utils/notificationutils.js";
 export const markInTime = async (req, res) => {
   try {
     const userId = req.user._id;
+    const {location}=req.body
     const user = await userModel.findById(userId);
     const userTimeZone = user.timeZone || "UTC";
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
@@ -48,7 +49,10 @@ export const markInTime = async (req, res) => {
 
     const attendance = await AttendanceModel.findOneAndUpdate(
       { userId, date },
-      { $set: { inTime, status: todayStatus } },
+      { $set: { inTime, status: todayStatus ,location: {
+        latitude: location?.latitude,
+        longitude: location?.longitude
+      }}},
       { upsert: true, new: true }
     );
 
@@ -69,6 +73,7 @@ export const markInTime = async (req, res) => {
 export const markOutTime = async (req, res) => {
   try {
     const userId = req.user._id;
+    const {location}=req.body
     const userTimeZone = req.user.timeZone || "UTC";
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
 
@@ -150,7 +155,10 @@ export const markOutTime = async (req, res) => {
 
     const attendanceStatus = await AttendanceModel.findOneAndUpdate(
       { userId, date },
-      { $set: { status: todayStatus } },
+      { $set: { status: todayStatus , location: {
+        latitude: location?.latitude,
+        longitude: location?.longitude
+      }} },
       { upsert: true, new: true }
     );
 
@@ -201,6 +209,7 @@ export const getTodayAttendance = async (req, res) => {
           inTime: null,
           outTime: null,
           status: "Holiday",
+          location
         },
       });
       

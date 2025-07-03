@@ -101,6 +101,15 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "hr", "employee"],
       default: "employee",
     },
+    payrollDetails:{
+      type:{
+        BankName:{ type: Number },
+        accountNumber:{ type: Number },
+        pfNumber:{ type: Number },
+        ifscCode:{ type: String },
+        UNA:{ type: Number },
+      }
+    }
   },
   {
     timestamps: true,

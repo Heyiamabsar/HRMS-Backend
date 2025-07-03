@@ -12,6 +12,15 @@ import { sendNotification } from "../utils/notificationutils.js";
 export const addPayrollBasicInfo = async (req, res) => {
   try {
     const {
+      month,
+      year,
+      conveyanceAllowance,
+      specialAllowance,
+      UNA,
+      totalDays,
+      workedDays,
+      holidayPayout,
+      TDS,
       basicSalary,
       medicalAllowance,
       travelingAllowance,
@@ -20,20 +29,37 @@ export const addPayrollBasicInfo = async (req, res) => {
       totalDeductions,
       bonuses,
       paymentMethod,
-      accountNumber,
-      bankName,
-      ifscCode,
       pfDeduction,
       loanDeduction,
       ptDeduction,
-      una,
       payDate,
+      grossSalary,
+      netSalary,
       status
     } = req.body;
     const userId = req.params.id;
 
+    const employee = await userModel.findById(userId);
+      if (!employee) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+
+     const existing = await payrollModel.findOne({ userId, month, year });
+      if (existing) {
+      return res.status(400).json({ success: false, message: "Salary slip already exists for this user in this month & year." });
+    }
+
     const payroll = new payrollModel({
       userId,
+      month,
+      year,
+      conveyanceAllowance,
+      specialAllowance,
+      UNA,
+      totalDays,
+      workedDays,
+      holidayPayout,
+      TDS,
       basicSalary,
       medicalAllowance,
       travelingAllowance,
@@ -42,20 +68,18 @@ export const addPayrollBasicInfo = async (req, res) => {
       totalDeductions,
       bonuses,
       paymentMethod,
-      accountNumber,
-      bankName,
-      ifscCode,
       pfDeduction,
       loanDeduction,
       ptDeduction,
-      una,
-      payDate,
+      grossSalary,
+      netSalary,
+      payDate:payDate || null,
       status: status || 'pending'
     });
 
     await payroll.save();
 
-      const employee = await userModel.findById(userId);
+
 
     await sendNotification({
       userId: employee._id,
@@ -92,9 +116,21 @@ export const addPayrollBasicInfo = async (req, res) => {
   }
 };
 
+// controllers/payrollController.js
 export const updatePayrollBasicInfo = async (req, res) => {
   try {
+    const userId = req.params.id;
     const {
+      month,
+      year,
+      adminPermission,
+      conveyanceAllowance,
+      specialAllowance,
+      UNA,
+      totalDays,
+      workedDays,
+      holidayPayout,
+      TDS,
       basicSalary,
       medicalAllowance,
       travelingAllowance,
@@ -103,50 +139,54 @@ export const updatePayrollBasicInfo = async (req, res) => {
       totalDeductions,
       bonuses,
       paymentMethod,
-      accountNumber,
-      bankName,
-      ifscCode,
       pfDeduction,
       loanDeduction,
       ptDeduction,
-      una,
       payDate,
+      grossSalary,
+      netSalary,
       status
     } = req.body;
 
-    const payrollId = req.params.id;
+    const payroll = await payrollModel.findOneAndUpdate(
+      { userId, month, year },
+      {
+        $set: {
+          basicSalary,
+          adminPermission,
+          medicalAllowance,
+          travelingAllowance,
+          conveyanceAllowance,
+          specialAllowance,
+          UNA,
+          totalDays,
+          workedDays,
+          holidayPayout,
+          TDS,
+          hra,
+          totalAllowances,
+          totalDeductions,
+          bonuses,
+          paymentMethod,
+          pfDeduction,
+          loanDeduction,
+          ptDeduction,
+          grossSalary,
+          netSalary,
+          payDate,
+          status
+        }
+      },
+      { new: true }
+    );
 
-    const payroll = await payrollModel.findById(payrollId);
     if (!payroll) {
-      return res.status(404).json({
-        success: false,
-        message: "Payroll record not found"
-      });
+      return res.status(404).json({ success: false, message: "Payroll not found for this user and date." });
     }
 
-    // Update fields
-    payroll.basicSalary = basicSalary;
-    payroll.medicalAllowance = medicalAllowance;
-    payroll.travelingAllowance = travelingAllowance;
-    payroll.hra = hra;
-    payroll.totalAllowances = totalAllowances;
-    payroll.totalDeductions = totalDeductions;
-    payroll.bonuses = bonuses;
-    payroll.paymentMethod = paymentMethod;
-    payroll.accountNumber = accountNumber;
-    payroll.bankName = bankName;
-    payroll.ifscCode = ifscCode;
-    payroll.pfDeduction = pfDeduction;
-    payroll.loanDeduction = loanDeduction;
-    payroll.ptDeduction = ptDeduction;
-    payroll.una = una;
-    payroll.payDate = payDate;
-    payroll.status = status || payroll.status;
+    const employee = await userModel.findById(userId);
 
-    await payroll.save();
-
-    const employee = await userModel.findById(payroll.userId);
-
+    // Notify employee about update
     await sendNotification({
       userId: employee._id,
       title: "Payroll Updated",
@@ -156,6 +196,7 @@ export const updatePayrollBasicInfo = async (req, res) => {
       performedBy: req.user._id
     });
 
+    // Notify admins/HR
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "Payroll Updated",
@@ -182,6 +223,7 @@ export const updatePayrollBasicInfo = async (req, res) => {
 };
 
 
+
 export const fetchPayrollDataFromExcel = async (req, res) => {
   try {
 
@@ -200,32 +242,38 @@ export const fetchPayrollDataFromExcel = async (req, res) => {
 
     const results = [];
     for (const item of data) {
-      if (!item.email || !item.payDate) {
-        results.push({ ...item, error: 'Missing email or payDate', matchedUser: false, recordStatus: 'skipped' });
+      if (!item.email) {
+        results.push({ ...item, error: 'Missing email', matchedUser: false, recordStatus: 'skipped' });
         continue;
       }
 
-      let payDate;
+let payDate = null;
+
+    if (item.payDate) {
       if (typeof item.payDate === 'number') {
         payDate = moment.utc("1899-12-30").add(item.payDate, 'days').toDate();
       } else {
         const parsed = moment.tz(item.payDate, ["YYYY-MM-DD", "DD-MM-YYYY", "MM/DD/YYYY"], true, "Asia/Kolkata");
-        if (!parsed.isValid()) {
-          results.push({ ...item, error: 'Invalid payDate format', matchedUser: false, recordStatus: 'skipped' });
-          continue;
+        if (parsed.isValid()) {
+          payDate = parsed.toDate();
+        } else {
+          // Invalid format — ignore payDate but don’t skip row
+          payDate = null;
         }
-        payDate = parsed.toDate();
       }
+    }
+
 
       // Parse numeric fields
       const toNullableNumber = (val) => {
-        const num = Number(val);
-        return val === 0 || val === '' || isNaN(num) ? null : num;
-      };
+      if (val === '' || val === null || typeof val === 'undefined') return 0;
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
 
       const numericFields = [
         "grossSalary", "netSalary", "basicSalary", "hra", "medicalAllowance",
-        "travelingAllowance", "loanDeduction", "bonuses", "ptDeduction", "pf",
+        "travelingAllowance", "loanDeduction", "bonuses", "ptDeduction", "pfDeduction",
         "una", "totalAllowances", "totalDeductions", "sickLeave", "casualLeave",
         "unpaidLeave", "totalLeaves", "salary", "overtime"
       ];
@@ -241,18 +289,39 @@ export const fetchPayrollDataFromExcel = async (req, res) => {
       }
 
       // Handle payroll record
-      const existing = await payrollModel.findOne({ userId: user._id, payDate });
+      const existing = payDate ?  await payrollModel.findOne({ userId: user._id, payDate }) : null;
+
+      const userSummary = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        department: user.department,
+        salary: user.salary,
+        month: user.month ,
+        year: user.year ,
+        role: user.role
+      };
 
       if (existing) {
         if (['processed', 'paid'].includes(existing.status)) {
-          results.push({ ...existing.toObject(), user, matchedUser: true, recordStatus: 'existing' });
+          results.push({
+            ...existing.toObject(),
+            user: userSummary,
+            matchedUser: true,
+            recordStatus: 'existing'
+          });
         } else {
           const updated = await payrollModel.findOneAndUpdate(
             { _id: existing._id },
             { ...item, userId: user._id, payDate, status: 'pending' },
             { new: true }
           );
-          results.push({ ...updated.toObject(), user, matchedUser: true, recordStatus: 'updated' });
+          results.push({
+            ...updated.toObject(),
+            user: userSummary,
+            matchedUser: true,
+            recordStatus: 'updated'
+          });
         }
       } else {
         const created = await payrollModel.create({
@@ -261,9 +330,15 @@ export const fetchPayrollDataFromExcel = async (req, res) => {
           payDate,
           status: 'pending',
         });
-        results.push({ ...created.toObject(), user, matchedUser: true, recordStatus: 'created' });
+        results.push({
+          ...created.toObject(),
+          user: userSummary,
+          matchedUser: true,
+          recordStatus: 'created'
+        });
       }
     }
+    console.log("results",results)
 
     res.status(200).json({
       success: true,
@@ -285,7 +360,7 @@ export const fetchPayrollDataFromExcel = async (req, res) => {
 
 
 
-
+// old ends points-----
 
 export const exportAllUsersToExcel = async (req, res) => {
   try {
