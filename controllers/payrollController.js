@@ -222,6 +222,44 @@ export const updatePayrollBasicInfo = async (req, res) => {
   }
 };
 
+// controllers/payrollController.js
+export const getPayrollsByMonthAndYear = async (req, res) => {
+  try {
+    let { month, year } = req.query;
+
+    // Default to last month if not provided
+    if (!month || !year) {
+      const currentDate = new Date();
+      currentDate.setMonth(currentDate.getMonth() - 1); // Go to last month
+
+      month = currentDate.getMonth() + 1; // getMonth() is 0-indexed
+      year = currentDate.getFullYear();
+    }
+
+    const payrolls = await payrollModel.find({ month, year }).populate("userId", "name email role");
+
+    if (payrolls.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `No payroll records found for ${month}/${year}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Payrolls fetched for ${month}/${year}`,
+      data: payrolls,
+    });
+  } catch (error) {
+    console.error("Error fetching payrolls:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
 
 
 export const fetchPayrollDataFromExcel = async (req, res) => {
