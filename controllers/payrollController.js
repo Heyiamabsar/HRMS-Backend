@@ -263,6 +263,49 @@ export const getPayrollsByMonthAndYear = async (req, res) => {
 };
 
 
+// controllers/payrollController.js
+export const getSinglePayrollsById = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const employee = await userModel.findById(userId);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const payrolls = await payrollModel.find({
+      userId,
+      status: { $in: ['processed', 'paid'] },
+    }).sort({ year: -1, month: -1 });
+
+    if (payrolls.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No processed or paid payroll records found for this user",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Visible payroll records fetched for ${employee.first_name} ${employee.last_name}`,
+      data: payrolls,
+    });
+  } catch (error) {
+    console.error("Error fetching visible payrolls:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
 
 export const fetchPayrollDataFromExcel = async (req, res) => {
   try {

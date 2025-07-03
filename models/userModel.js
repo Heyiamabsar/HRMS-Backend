@@ -103,7 +103,7 @@ const userSchema = new mongoose.Schema(
     },
     payrollDetails:{
       type:{
-        BankName:{ type: Number },
+        BankName:{ type: String },
         accountNumber:{ type: Number },
         pfNumber:{ type: Number },
         ifscCode:{ type: String },
