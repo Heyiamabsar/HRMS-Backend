@@ -30,7 +30,9 @@ const attendanceSchema = new mongoose.Schema({
   location: {
     type: {
       latitude: { type: Number },
-      longitude: { type: Number }
+      longitude: { type: Number },
+      address: { type: Object } ,
+      displayName: { type: String } 
     }
   }
 }, { timestamps: true });

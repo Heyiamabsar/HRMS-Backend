@@ -12,7 +12,7 @@ dotenv.config();
 export const register = async (req, res) => {
   try {
 
-    const { email } = req.body;
+    const { email, } = req.body;
 
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {

@@ -116,7 +116,7 @@ export const addPayrollBasicInfo = async (req, res) => {
   }
 };
 
-// controllers/payrollController.js
+
 export const updatePayrollBasicInfo = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -222,7 +222,7 @@ export const updatePayrollBasicInfo = async (req, res) => {
   }
 };
 
-// controllers/payrollController.js
+
 export const getPayrollsByMonthAndYear = async (req, res) => {
   try {
     let { month, year } = req.query;
@@ -263,10 +263,12 @@ export const getPayrollsByMonthAndYear = async (req, res) => {
 };
 
 
-// controllers/payrollController.js
 export const getSinglePayrollsById = async (req, res) => {
   try {
     const userId = req.params.id;
+    const currentUser = req.user; 
+    console.log("User ID:", userId);
+    console.log("Logged-in Role:", currentUser.role);
 
     const employee = await userModel.findById(userId);
     if (!employee) {
@@ -276,25 +278,33 @@ export const getSinglePayrollsById = async (req, res) => {
       });
     }
 
+    let statusFilter = [];
+
+    if (currentUser.role === 'employee') {
+      statusFilter = ['processed', 'paid'];
+    } else if (['admin', 'hr'].includes(currentUser.role)) {
+      statusFilter = ['pending', 'processed', 'paid', 'onHold'];
+    }
+
     const payrolls = await payrollModel.find({
       userId,
-      status: { $in: ['processed', 'paid'] },
+      status: { $in: statusFilter },
     }).sort({ year: -1, month: -1 });
 
     if (payrolls.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "No processed or paid payroll records found for this user",
+        message: "No payroll records found for this user with the given role access",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: `Visible payroll records fetched for ${employee.first_name} ${employee.last_name}`,
+      message: `Payroll records fetched for ${employee.first_name} ${employee.last_name}`,
       data: payrolls,
     });
   } catch (error) {
-    console.error("Error fetching visible payrolls:", error);
+    console.error("Error fetching payrolls:", error);
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -302,6 +312,7 @@ export const getSinglePayrollsById = async (req, res) => {
     });
   }
 };
+
 
 
 

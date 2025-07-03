@@ -5,6 +5,7 @@ import holidayModel from "../models/holidayModule.js";
 import { formatAttendanceRecord } from "../utils/attendanceUtils.js";
 import LeaveModel from "../models/leaveModel.js";
 import ExcelJS from "exceljs";
+import axios from "axios";
 import path from "path";
 import fs from "fs";
 import { sendNotification } from "../utils/notificationutils.js";
@@ -13,11 +14,29 @@ import { sendNotification } from "../utils/notificationutils.js";
 export const markInTime = async (req, res) => {
   try {
     const userId = req.user._id;
-    const {location}=req.body
+    const { location } = req.body;
+    const latitude = location?.latitude;
+    const longitude = location?.longitude;
     const user = await userModel.findById(userId);
     const userTimeZone = user.timeZone || "UTC";
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
     const existing = await AttendanceModel.findOne({ userId, date });
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: "Location coordinates (latitude and longitude) are required.",
+      });
+    }
+
+    if (existing && existing.location?.address) {
+      return res.status(200).json({
+        success: true,
+        message: "Address already stored for today",
+        address: existing.location.address,
+        source: "attendance_cache",
+      });
+    }
 
     if (existing && existing.inTime) {
       return res.status(400).json({
@@ -26,6 +45,27 @@ export const markInTime = async (req, res) => {
         message: "Already punched in today",
       });
     }
+
+    const response = await axios.get(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+      {
+        headers: {
+          "User-Agent": process.env.NOMINATION_USER_AGENT,
+        },
+      }
+    );
+    const address = response?.data?.address;
+    const displayName = response?.data?.display_name;
+    const userAgent = req.headers["user-agent"] || "";
+      let punchedFrom = "Unknown";
+
+      if (/mobile/i.test(userAgent)) {
+        punchedFrom = "Mobile";
+      } else if (/PostmanRuntime/i.test(userAgent)) {
+        punchedFrom = "Postman";
+      } else {
+        punchedFrom = "Web";
+      }
 
     let todayStatus;
     const inTime = moment().tz(userTimeZone).toDate();
@@ -38,21 +78,34 @@ export const markInTime = async (req, res) => {
       todayStatus = "Half Day";
 
       await sendNotification({
-      forRoles: ["admin", "hr"], 
-      title: "Late Punch IN Alert",
-      message: `${req.user.first_name} ${req.user.last_name} Logged in late today at ${moment(inTime).tz(userTimeZone).format("hh:mm AM")}`,
-      link: `/employee/${userId}/profile`,
-      type: "user",
-      performedBy: req.user._id
-});
+        forRoles: ["admin", "hr"],
+        title: "Late Punch IN Alert",
+        message: `${req.user.first_name} ${
+          req.user.last_name
+        } Logged in late today at ${moment(inTime)
+          .tz(userTimeZone)
+          .format("hh:mm AM")}`,
+        link: `/employee/${userId}/profile`,
+        type: "user",
+        performedBy: req.user._id,
+      });
     }
 
     const attendance = await AttendanceModel.findOneAndUpdate(
       { userId, date },
-      { $set: { inTime, status: todayStatus ,location: {
-        latitude: location?.latitude,
-        longitude: location?.longitude
-      }}},
+      {
+        $set: {
+          inTime,
+          status: todayStatus,
+          location: {
+            latitude,
+            longitude,
+            address,
+            displayName,
+            punchedFrom,
+          },
+        },
+      },
       { upsert: true, new: true }
     );
 
@@ -61,6 +114,7 @@ export const markInTime = async (req, res) => {
       statusCode: 200,
       message: "Punched IN successfully",
       attendance,
+      punchedFrom
     });
   } catch (err) {
     res
@@ -73,7 +127,17 @@ export const markInTime = async (req, res) => {
 export const markOutTime = async (req, res) => {
   try {
     const userId = req.user._id;
-    const {location}=req.body
+    const { location } = req.body;
+    const latitude = location?.latitude;
+    const longitude = location?.longitude;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: "Location coordinates (latitude and longitude) are required.",
+      });
+    }
+
     const userTimeZone = req.user.timeZone || "UTC";
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
 
@@ -84,7 +148,6 @@ export const markOutTime = async (req, res) => {
     const nineFifteen = moment(`${date} 09:15 AM`, "YYYY-MM-DD hh:mm A").tz(
       userTimeZone
     );
-
 
     if (!attendance || !attendance.inTime) {
       return res.status(400).json({
@@ -111,6 +174,28 @@ export const markOutTime = async (req, res) => {
     attendance.duration = duration;
     await attendance.save();
 
+        const response = await axios.get(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+      {
+        headers: {
+          'User-Agent': process.env.NOMINATION_USER_AGENT,
+        },
+      }
+    );
+
+    const address = response?.data?.address;
+    const displayName = response?.data?.display_name;
+    const userAgent = req.headers["user-agent"] || "";
+      let punchedFrom = "Unknown";
+
+      if (/mobile/i.test(userAgent)) {
+        punchedFrom = "Mobile";
+      } else if (/PostmanRuntime/i.test(userAgent)) {
+        punchedFrom = "Postman";
+      } else {
+        punchedFrom = "Web";
+      }
+
     let todayStatus;
     if (inTime.isSameOrBefore(nineFifteen)) {
       todayStatus = "Present";
@@ -126,7 +211,7 @@ export const markOutTime = async (req, res) => {
       todayStatus = "Half Day";
     }
 
-        if (holiday) {
+    if (holiday) {
       if (!attendance) {
         attendance = await AttendanceModel.create({
           userId,
@@ -135,30 +220,42 @@ export const markOutTime = async (req, res) => {
           outTime: null,
           status: "Holiday",
         });
-      } else if (!attendance.inTime && !attendance.outTime && attendance.status !== "Holiday") {
+      } else if (
+        !attendance.inTime &&
+        !attendance.outTime &&
+        attendance.status !== "Holiday"
+      ) {
         attendance.status = "Holiday";
         await attendance.save();
       } else if (attendance.inTime && attendance.outTime) {
         attendance.status = "Over Time";
-        todayStatus = "Over Time"
+        todayStatus = "Over Time";
         await attendance.save();
         await sendNotification({
-        forRoles: ["admin", "hr"], 
-        title: `${req.user.first_name} ${req.user.last_name}  Working Over Time`,
-        message:`${req.user.first_name} ${req.user.last_name}  Working as on Holiday as Over Time`,
-        link: `/employee/${employee._id}/profile`,
-        type: "user",
-        performedBy: req.user._id
-      });
+          forRoles: ["admin", "hr"],
+          title: `${req.user.first_name} ${req.user.last_name}  Working Over Time`,
+          message: `${req.user.first_name} ${req.user.last_name}  Working as on Holiday as Over Time`,
+          // link: `/employee/${employee._id}/profile`,
+          type: "user",
+          performedBy: req.user._id,
+        });
       }
     }
 
     const attendanceStatus = await AttendanceModel.findOneAndUpdate(
       { userId, date },
-      { $set: { status: todayStatus , location: {
-        latitude: location?.latitude,
-        longitude: location?.longitude
-      }} },
+      {
+        $set: {
+          status: todayStatus,
+          location: {
+            latitude,
+            longitude,
+            address,
+            displayName,
+            punchedFrom
+          },
+        },
+      },
       { upsert: true, new: true }
     );
 
@@ -169,6 +266,7 @@ export const markOutTime = async (req, res) => {
       statusCode: 200,
       message: "Punched OUT successfully",
       attendanceStatus,
+      punchedFrom
     });
   } catch (err) {
     res
@@ -183,7 +281,6 @@ export const getTodayAttendance = async (req, res) => {
     const userId = req.user._id;
     const date = moment().format("YYYY-MM-DD");
 
-
     const holiday = await holidayModel.findOne({ date, isOptional: false });
     let attendance = await AttendanceModel.findOne({ date, userId });
 
@@ -196,7 +293,7 @@ export const getTodayAttendance = async (req, res) => {
           outTime: null,
           status: "Holiday",
         });
-         await attendance.save();
+        await attendance.save();
       }
       return res.status(200).json({
         success: true,
@@ -209,15 +306,12 @@ export const getTodayAttendance = async (req, res) => {
           inTime: null,
           outTime: null,
           status: "Holiday",
-          location
+          location,
         },
       });
-      
     }
 
-
     if (!attendance) {
-
       attendance = await AttendanceModel.create({
         userId,
         date,
@@ -225,7 +319,11 @@ export const getTodayAttendance = async (req, res) => {
         outTime: null,
         status: "Absent",
       });
-    } else if (!attendance.inTime && !attendance.outTime && attendance.status !== "Absent") {
+    } else if (
+      !attendance.inTime &&
+      !attendance.outTime &&
+      attendance.status !== "Absent"
+    ) {
       // ❌ No in/out time? Update status to Absent in DB
       attendance.status = "Absent";
       await attendance.save();
@@ -261,7 +359,10 @@ export const getAllUsersTodayAttendance = async (req, res) => {
     const date = moment().format("YYYY-MM-DD");
 
     const attendances = await AttendanceModel.find({ date })
-      .populate("userId", "first_name last_name email status userId  department designation salary role")
+      .populate(
+        "userId",
+        "first_name last_name email status userId  department designation salary role"
+      )
       .sort({ inTime: 1, outTime: 1 });
 
     const result = await Promise.all(
@@ -279,7 +380,6 @@ export const getAllUsersTodayAttendance = async (req, res) => {
                 designation: attendance.userId.designation || null,
                 salary: attendance.userId.salary || null,
                 role: attendance.userId.role || null,
-
               }
             : {
                 userId: user._id || null,
@@ -289,7 +389,7 @@ export const getAllUsersTodayAttendance = async (req, res) => {
                 department: user.department || null,
                 designation: user.designation || null,
                 salary: user.salary || null,
-                role:user.role || null
+                role: user.role || null,
               },
           date: attendance.date || null,
           inTime: attendance.inTime || null,
@@ -408,8 +508,6 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
   }
 };
 
-
-
 export const getAllUsersAttendanceReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -431,7 +529,9 @@ export const getAllUsersAttendanceReport = async (req, res) => {
       });
     }
 
-    const formattedStart = moment.tz(startDate, user.timeZone).format("YYYY-MM-DD");
+    const formattedStart = moment
+      .tz(startDate, user.timeZone)
+      .format("YYYY-MM-DD");
     const formattedEnd = moment.tz(endDate, user.timeZone).format("YYYY-MM-DD");
 
     const dateRange = [];
@@ -467,7 +567,7 @@ export const getAllUsersAttendanceReport = async (req, res) => {
           presentCount: 0,
           absentCount: 0,
           halfDayCount: 0,
-          outOfDays: 0
+          outOfDays: 0,
         });
       }
 
