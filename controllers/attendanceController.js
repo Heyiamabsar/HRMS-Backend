@@ -40,7 +40,7 @@ export const markInTime = async (req, res) => {
       await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "Late Punch IN Alert",
-      message: `${req.user.name} Logged in late today at ${moment(inTime).tz(userTimeZone).format("hh:mm AM")}`,
+      message: `${req.user.first_name} ${req.user.last_name} Logged in late today at ${moment(inTime).tz(userTimeZone).format("hh:mm AM")}`,
       link: `/employee/${userId}/profile`,
       type: "user",
       performedBy: req.user._id
@@ -144,8 +144,8 @@ export const markOutTime = async (req, res) => {
         await attendance.save();
         await sendNotification({
         forRoles: ["admin", "hr"], 
-        title: `${req.user.name} Working Over Time`,
-        message:`${req.user.name} Working as on Holiday as Over Time`,
+        title: `${req.user.first_name} ${req.user.last_name}  Working Over Time`,
+        message:`${req.user.first_name} ${req.user.last_name}  Working as on Holiday as Over Time`,
         link: `/employee/${employee._id}/profile`,
         type: "user",
         performedBy: req.user._id

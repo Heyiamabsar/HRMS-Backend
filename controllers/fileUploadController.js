@@ -38,7 +38,7 @@ export const handleFileUpload = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "Uploaded documents",
-      message: `${req.user.name} Uploaded  ${req.body.title} `,
+      message: `${req.user.first_name} ${req.user.last_name} Uploaded  ${req.body.title} `,
       link: `/employee/${populatedUpload.user._id}/profile`,
       type: "user",
       performedBy: req.user._id
@@ -109,7 +109,7 @@ export const deleteUpload = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "Documents deleted",
-      message: `${req.user.name} Deleted  ${req.body.title} `,
+      message: `${req.user.first_name} ${req.user.last_name}  Deleted  ${req.body.title} `,
       link: `/employee/${req.user._id}/profile`,
       type: "user",
       performedBy: req.user._id

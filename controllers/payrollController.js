@@ -94,7 +94,7 @@ export const addPayrollBasicInfo = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "Payroll Created",
-      message: `${req.user.name} created payroll for ${employee.name}`,
+      message: `${req.user.first_name} ${req.user.last_name} created payroll for ${employee.first_name}  ${employee.last_name}`,
       link: `/admin/payroll/${payroll._id}`,
       type: "admin",
       performedBy: req.user._id
@@ -200,7 +200,7 @@ export const updatePayrollBasicInfo = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "Payroll Updated",
-      message: `${req.user.name} updated payroll for ${employee.name}`,
+      message: `${req.user.first_name} ${req.user.last_name} updated payroll for ${employee.first_name} ${employee.last_name}`,
       link: `/admin/payroll/${payroll._id}`,
       type: "admin",
       performedBy: req.user._id

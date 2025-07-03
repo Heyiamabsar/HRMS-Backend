@@ -51,7 +51,7 @@ export const applyLeave = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "New Leave Request",
-      message: `${req.user.name} requested leave from ${leave.fromDate} to ${leave.toDate}`,
+      message: `${req.user.first_name} ${req.user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
       link: `/admin/leave-requests`,
       type: "user",
       performedBy: req.user._id 
@@ -208,7 +208,7 @@ export const updateLeaveStatus = async (req, res) => {
     });
     await sendNotification({
       forRoles: ["admin", "hr"],
-      title: `${user.name}'s Leave Status Updated`, 
+      title: `${req.user.first_name} ${req.user.last_name}'s Leave Status Updated`, 
       message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${req.user.name}`,
       link: `/user/leave-status`,
       type: "admin",

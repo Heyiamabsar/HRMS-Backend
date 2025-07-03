@@ -111,7 +111,7 @@ export const updateUser = async (req, res) => {
       await sendNotification({
         forRoles: ["admin", "hr"],
         title: "User Updated",
-        message: `${req.user.name} updated details of ${updatedUser.name}`,
+        message: `${req.user.first_name} ${req.user.last_name} updated details of ${updatedUser.first_name} ${updatedUser.last_name}`,
         link: `/admin/users/${updatedUser._id}`,
         type: "admin",
         performedBy: req.user._id
@@ -155,7 +155,7 @@ export const updateUserPassword = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "Password Updated",
-      message: `${req.user.name} updated the password for a user`,
+      message: `${req.user.first_name} ${req.user.last_name} updated the password for a user`,
       link: `/admin/users/${req.params.id}`,
       type: "admin",
       performedBy: req.user._id
@@ -164,7 +164,7 @@ export const updateUserPassword = async (req, res) => {
     await sendNotification({
       userId: updatedUser._id,
       title: "Your Password was Updated",
-      message: `Your account password was updated by ${req.user.name}.`,
+      message: `Your account password was updated by ${req.user.first_name} ${req.user.last_name}.`,
       link: `/user/profile`,
       type: "user",
       performedBy: req.user._id
@@ -198,7 +198,7 @@ export const deleteUser = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "User Deleted",
-      message: `${req.user.name} deleted user ${deletedUser.name}`,
+      message: `${req.user.first_name} ${req.user.last_name} deleted user ${deletedUser.first_name} ${deletedUser.last_name}`,
       link: `/admin/users`,
       type: "admin",
       performedBy: req.user._id

@@ -26,7 +26,7 @@ export const register = async (req, res) => {
         await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "New Employee Joined",
-      message: `${req.user.name} added a new employee: ${user.name}`,
+      message: `${req.user.first_name} ${req.user.last_name}  added a new employee: ${user.first_name} ${user.last_name}`,
       link: `/employee/${user._id}/profile`,
       type: "admin",
       performedBy: req.user._id
