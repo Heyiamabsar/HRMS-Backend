@@ -235,7 +235,7 @@ export const getPayrollsByMonthAndYear = async (req, res) => {
       month = currentDate.getMonth() + 1; // getMonth() is 0-indexed
       year = currentDate.getFullYear();
     }
-
+      console.log("month and year ",month, year)
     const payrolls = await payrollModel.find({ month, year }).populate("userId", "name email role");
 
     if (payrolls.length === 0) {
@@ -247,6 +247,7 @@ export const getPayrollsByMonthAndYear = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      statusCode:200,
       message: `Payrolls fetched for ${month}/${year}`,
       data: payrolls,
     });
@@ -254,6 +255,7 @@ export const getPayrollsByMonthAndYear = async (req, res) => {
     console.error("Error fetching payrolls:", error);
     res.status(500).json({
       success: false,
+      statusCode:500,
       message: "Internal Server Error",
       error: error.message,
     });
@@ -443,36 +445,36 @@ export const sendUserDataToExcel=async(req,res)=>{
     }
 }
 
-export const getExcelDataById=async(req,res)=>{
-try {
-    const { id } = req.params; 
-      const data = getExcelData();
-      console.log("_id",id)
-      console.log('data from excel',data)
+// export const getExcelDataById=async(req,res)=>{
+// try {
+//     const { id } = req.params; 
+//       const data = getExcelData();
+//       console.log("_id",id)
+//       console.log('data from excel',data)
 
-    const user = data.find((item) => item._id === id);
+//     const user = data.find((item) => item._id === id);
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        statusCode: 404,
-        message: 'User not found in Excel',
-      });
-    }
-   console.log('data from excel',data)
-    return res.status(200).json({
-      success: true,
-      statusCode: 200,
-      message: 'User details fetched by _id from Excel',
-      user,
-    });
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         statusCode: 404,
+//         message: 'User not found in Excel',
+//       });
+//     }
+//    console.log('data from excel',data)
+//     return res.status(200).json({
+//       success: true,
+//       statusCode: 200,
+//       message: 'User details fetched by _id from Excel',
+//       user,
+//     });
 
 
-} catch (error) {
-    return res.status(500).json({
-        success:false,
-        statusCode:500,
-        message:error.message
-    })
-}
-}
+// } catch (error) {
+//     return res.status(500).json({
+//         success:false,
+//         statusCode:500,
+//         message:error.message
+//     })
+// }
+// }

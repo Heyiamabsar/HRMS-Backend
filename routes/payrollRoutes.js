@@ -2,7 +2,7 @@ import express from 'express';
 import multer from "multer";
 import { storage } from "../config/cloudinary.config.js";
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
-import { addPayrollBasicInfo, exportAllUsersToExcel, fetchPayrollDataFromExcel, getExcelDataById, getPayrollsByMonthAndYear, sendUserDataToExcel, updatePayrollBasicInfo } from '../controllers/payrollController.js';
+import { addPayrollBasicInfo, exportAllUsersToExcel, fetchPayrollDataFromExcel, getPayrollsByMonthAndYear, sendUserDataToExcel, updatePayrollBasicInfo } from '../controllers/payrollController.js';
 
 const payrollRouter = express.Router();
 
@@ -17,14 +17,14 @@ payrollRouter.use(authenticate);
 payrollRouter.post('/fetch_payroll_from_excel', authorizeRoles('admin', 'hr'), upload.single('file'), fetchPayrollDataFromExcel);
 payrollRouter.post('/add_payroll_basic_info/:id', authorizeRoles('admin', 'hr'), addPayrollBasicInfo);
 payrollRouter.put('/update_payroll_basic_info/:id', authorizeRoles('admin', 'hr'), updatePayrollBasicInfo);
-payrollRouter.put('/get_payroll_data', authorizeRoles('admin', 'hr'), getPayrollsByMonthAndYear);
+payrollRouter.get('/get_payroll_data', authorizeRoles('admin', 'hr'), getPayrollsByMonthAndYear);
 
 
 
 
 payrollRouter.post('/load_all_User_To_Excel', authorizeRoles('admin', 'hr', 'employee'),exportAllUsersToExcel );
 payrollRouter.post('/:id', authorizeRoles('admin', 'hr', 'employee'),sendUserDataToExcel );
-payrollRouter.get('/:id', authorizeRoles('admin', 'hr', 'employee'),getExcelDataById );
+// payrollRouter.get('/:id', authorizeRoles('admin', 'hr', 'employee'),getExcelDataById );
 
 
 export default payrollRouter;
