@@ -95,6 +95,8 @@ export const getUserById = async (req, res) => {
 // Update User
 export const updateUser = async (req, res) => {
   try {
+    	const loginUserId=req.user._id
+ 	const loginUser = await userModel.findById(loginUserId);
      const { password, ...updateData } = req.body;
 
      if(password){
@@ -111,10 +113,10 @@ export const updateUser = async (req, res) => {
       await sendNotification({
         forRoles: ["admin", "hr"],
         title: "User Updated",
-        message: `${req.user.first_name} ${req.user.last_name} updated details of ${updatedUser.first_name} ${updatedUser.last_name}`,
+        message: `${loginUser.first_name} ${loginUser.last_name} updated details of ${updatedUser.first_name} ${updatedUser.last_name}`,
         link: `/admin/users/${updatedUser._id}`,
         type: "admin",
-        performedBy: req.user._id
+        performedBy: loginUser._id
       });
 
     res.status(200).json({
@@ -131,6 +133,9 @@ export const updateUser = async (req, res) => {
 export const updateUserPassword = async (req, res) => {
   try {
     const { password } = req.body;
+
+    	const loginUserId=req.user._id
+ 	const loginUser = await userModel.findById(loginUserId);
 
     if (!password) {
       return res.status(400).json({
@@ -155,19 +160,19 @@ export const updateUserPassword = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "Password Updated",
-      message: `${req.user.first_name} ${req.user.last_name} updated the password for a user`,
+      message: `${loginUser.first_name} ${loginUser.last_name} updated the password for a user`,
       link: `/admin/users/${req.params.id}`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
     await sendNotification({
       userId: updatedUser._id,
       title: "Your Password was Updated",
-      message: `Your account password was updated by ${req.user.first_name} ${req.user.last_name}.`,
+      message: `Your account password was updated by ${loginUser.first_name} ${loginUser.last_name}.`,
       link: `/user/profile`,
       type: "user",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
 
@@ -189,6 +194,10 @@ export const updateUserPassword = async (req, res) => {
 // Delete User
 export const deleteUser = async (req, res) => {
   try {
+
+    	const loginUserId=req.user._id
+ 	const loginUser = await userModel.findById(loginUserId);
+
     const deletedUser = await User.findByIdAndDelete(req.params.id);
 
     if (!deletedUser) {
@@ -198,10 +207,10 @@ export const deleteUser = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "User Deleted",
-      message: `${req.user.first_name} ${req.user.last_name} deleted user ${deletedUser.first_name} ${deletedUser.last_name}`,
+      message: `${loginUser.first_name} ${loginUser.last_name} deleted user ${deletedUser.first_name} ${deletedUser.last_name}`,
       link: `/admin/users`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
     res.status(200).json({ statusCode: 200, success: true, message: 'User deleted successfully' });

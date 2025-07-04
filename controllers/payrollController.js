@@ -11,6 +11,8 @@ import { sendNotification } from "../utils/notificationutils.js";
 
 export const addPayrollBasicInfo = async (req, res) => {
   try {
+    	const loginUserId=req._id
+ 	const loginUser = await userModel.findById(loginUserId);
     const {
       month,
       year,
@@ -87,17 +89,17 @@ export const addPayrollBasicInfo = async (req, res) => {
       message: `Your payroll for ${payDate} has been generated.`,
       link: `/user/payroll/${payroll._id}`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy:loginUser._id
     });
 
 
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "Payroll Created",
-      message: `${req.user.first_name} ${req.user.last_name} created payroll for ${employee.first_name}  ${employee.last_name}`,
+      message: `${loginUser.first_name} ${loginUser.last_name} created payroll for ${employee.first_name}  ${employee.last_name}`,
       link: `/admin/payroll/${payroll._id}`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
     res.status(201).json({
@@ -119,6 +121,8 @@ export const addPayrollBasicInfo = async (req, res) => {
 
 export const updatePayrollBasicInfo = async (req, res) => {
   try {
+    	const loginUserId=loginUser._id
+ 	const loginUser = await userModel.findById(loginUserId);
     const userId = req.params.id;
     const {
       month,
@@ -193,17 +197,17 @@ export const updatePayrollBasicInfo = async (req, res) => {
       message: `Your payroll for ${payDate} has been updated.`,
       link: `/user/payroll/${payroll._id}`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
     // Notify admins/HR
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "Payroll Updated",
-      message: `${req.user.first_name} ${req.user.last_name} updated payroll for ${employee.first_name} ${employee.last_name}`,
+      message: `${loginUser.first_name} ${loginUser.last_name} updated payroll for ${employee.first_name} ${employee.last_name}`,
       link: `/admin/payroll/${payroll._id}`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
     res.status(200).json({
@@ -266,7 +270,7 @@ export const getPayrollsByMonthAndYear = async (req, res) => {
 export const getSinglePayrollsById = async (req, res) => {
   try {
     const userId = req.params.id;
-    const currentUser = req.user; 
+    const currentUser = loginUser; 
     console.log("User ID:", userId);
     console.log("Logged-in Role:", currentUser.role);
 

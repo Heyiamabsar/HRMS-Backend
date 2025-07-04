@@ -8,6 +8,9 @@ import { sendNotification } from "../utils/notificationutils.js";
 export const handleFileUpload = async (req, res) => {
   try {
 
+    	const loginUserId=req.user._id
+ 	const loginUser = await userModel.findById(loginUserId);
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({success: false, statusCode: 400, error: 'No files uploaded' });
     }
@@ -48,10 +51,10 @@ export const handleFileUpload = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"],
       title: "New Files Uploaded",
-      message: `${req.user.first_name} ${req.user.last_name} uploaded ${req.files.length} file(s): "${newUpload.title}"`,
+      message: `${loginUser.first_name} ${loginUser.last_name} uploaded ${req.files.length} file(s): "${newUpload.title}"`,
       link: `/uploads/${savedUpload._id}`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
     res.status(200).json({
@@ -116,6 +119,9 @@ console.log("Get Upload ID:", id);
 export const deleteUpload = async (req, res) => {
   const { id } = req.params;
 
+  	const loginUserId=req.user._id
+ 	const loginUser = await userModel.findById(loginUserId);
+
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ success: false, statusCode: 400, error: 'Invalid ID format' });
   }
@@ -129,10 +135,10 @@ export const deleteUpload = async (req, res) => {
       await sendNotification({
       forRoles: ["admin", "hr"],
       title: "File Upload Deleted",
-      message: `${req.user.first_name} ${req.user.last_name} deleted uploaded files titled "${upload.title}"`,
+      message: `${loginUser.first_name} ${loginUser.last_name} deleted uploaded files titled "${upload.title}"`,
       link: `/uploads`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
     res.status(200).json({ success: true, statusCode: 200, message: 'Upload deleted successfully' });

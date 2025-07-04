@@ -11,6 +11,7 @@ export const applyLeave = async (req, res) => {
   try {
     const { leaveType, fromDate, toDate, reason } = req.body;
     const userId = req.user?._id;
+     const user = await userModel.findById(userId);
 
     const leaveDays =
       Math.ceil(
@@ -51,13 +52,13 @@ export const applyLeave = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "New Leave Request",
-      message: `${req.user.first_name} ${req.user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
+      message: `${user.first_name} ${user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
       link: `/admin/leave-requests`,
       type: "user",
-      performedBy: req.user._id 
+      performedBy: user._id 
     });
     await sendNotification({
-      userId: req.user._id, 
+      userId: user._id, 
       title: "Leave Request Submitted",
       message: `Your leave request from ${leave.fromDate} to ${leave.toDate} has been submitted.`,
       link: `/user/leave-status`,
@@ -84,6 +85,8 @@ export const updateLeaveStatus = async (req, res) => {
   try {
     const leaveId = req.params.id;
     const { status, fromDate, toDate } = req.body;
+    	const userId=req.user._id
+ 	    const loginUser = await userModel.findById(userId);
 
     if (!["approved", "rejected", "cancelled"].includes(status)) {
       return res.status(400).json({
@@ -201,15 +204,15 @@ export const updateLeaveStatus = async (req, res) => {
     await sendNotification({
       userId: leave.employee, 
       title: `Your Leave Status Updated`, 
-      message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${req.user.name}`,
+      message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
       link: `/user/leave-status`,
       type: "admin",
       performedBy: req.user._id
     });
     await sendNotification({
       forRoles: ["admin", "hr"],
-      title: `${req.user.first_name} ${req.user.last_name}'s Leave Status Updated`, 
-      message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${req.user.name}`,
+      title: `${loginUser.first_name} ${loginUser.last_name}'s Leave Status Updated`, 
+      message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
       link: `/user/leave-status`,
       type: "admin",
       performedBy: req.user._id

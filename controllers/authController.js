@@ -13,23 +13,24 @@ export const register = async (req, res) => {
   try {
 
     const { email, } = req.body;
-
+    const userId=req.user._id
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success : false,  statusCode: 400,message:"Email already exists", error: "Email already exists" });
     }
   
     const user = await userModel.create(req.body);
+    const loginUser = await userModel.findById(userId);
     const userObj = user.toObject();
     delete userObj.password;
 
         await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "New Employee Joined",
-      message: `${req.user.first_name} ${req.user.last_name}  added a new employee: ${user.first_name} ${user.last_name}`,
+      message: `${loginUser.first_name} ${loginUser.last_name}  added a new employee: ${user.first_name} ${user.last_name}`,
       link: `/employee/${user._id}/profile`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });
 
     res.status(201).json({success : true,  statusCode: 201,

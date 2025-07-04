@@ -22,6 +22,7 @@ export const markInTime = async (req, res) => {
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
     const existing = await AttendanceModel.findOne({ userId, date });
 
+
     if (!latitude || !longitude) {
       return res.status(400).json({
         success: false,
@@ -80,14 +81,14 @@ export const markInTime = async (req, res) => {
       await sendNotification({
         forRoles: ["admin", "hr"],
         title: "Late Punch IN Alert",
-        message: `${req.user.first_name} ${
-          req.user.last_name
+        message: `${user.first_name} ${
+          user.last_name
         } Logged in late today at ${moment(inTime)
           .tz(userTimeZone)
           .format("hh:mm AM")}`,
         link: `/employee/${userId}/profile`,
         type: "user",
-        performedBy: req.user._id,
+        performedBy: user._id,
       });
     }
 
@@ -130,6 +131,8 @@ export const markOutTime = async (req, res) => {
     const { location } = req.body;
     const latitude = location?.latitude;
     const longitude = location?.longitude;
+
+     const user = await userModel.findById(userId);
 
     if (!latitude || !longitude) {
       return res.status(400).json({
@@ -233,8 +236,8 @@ export const markOutTime = async (req, res) => {
         await attendance.save();
         await sendNotification({
           forRoles: ["admin", "hr"],
-          title: `${req.user.first_name} ${req.user.last_name}  Working Over Time`,
-          message: `${req.user.first_name} ${req.user.last_name}  Working as on Holiday as Over Time`,
+          title: `${user.first_name} ${user.last_name}  Working Over Time`,
+          message: `${user.first_name} ${user.last_name}  Working as on Holiday as Over Time`,
           // link: `/employee/${employee._id}/profile`,
           type: "user",
           performedBy: req.user._id,

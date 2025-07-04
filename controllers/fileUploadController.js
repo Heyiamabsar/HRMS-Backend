@@ -3,15 +3,16 @@ import mongoose from 'mongoose';
 import UserModel from "../models/userModel.js";
 import UploadModel from '../models/fileUploadModel.js';
 import { sendNotification } from '../utils/notificationutils.js';
+import userModel from '../models/userModel.js';
 
 
 export const handleFileUpload = async (req, res) => {
   try {
-
+     const userId=req.user._id
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, statusCode: 400, message: 'No files uploaded', error: 'No files uploaded' });
     }
-
+    const user = await userModel.findById(userId);
     const files = req.files.map((file) => ({
         _id: new mongoose.Types.ObjectId(),
       filename: file.originalname,
@@ -38,10 +39,10 @@ export const handleFileUpload = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "Uploaded documents",
-      message: `${req.user.first_name} ${req.user.last_name} Uploaded  ${req.body.title} `,
+      message: `${user.first_name} ${user.last_name} Uploaded  ${req.body.title} `,
       link: `/employee/${populatedUpload.user._id}/profile`,
       type: "user",
-      performedBy: req.user._id
+      performedBy: user._id
     });
 
     res.status(200).json({
@@ -102,6 +103,9 @@ export const deleteUpload = async (req, res) => {
   }
 
   try {
+    	const userId=req.user._id
+        const user = await userModel.findById(userId);
+
     const upload = await UploadModel.findByIdAndDelete(id);
     if (!upload) {
       return res.status(404).json({ success: false, statusCode: 404, message: 'Upload not found', error: 'Upload not found' });
@@ -109,10 +113,10 @@ export const deleteUpload = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "Documents deleted",
-      message: `${req.user.first_name} ${req.user.last_name}  Deleted  ${req.body.title} `,
-      link: `/employee/${req.user._id}/profile`,
+      message: `${user.first_name} ${user.last_name}  Deleted  ${req.body.title} `,
+      link: `/employee/${user._id}/profile`,
       type: "user",
-      performedBy: req.user._id
+      performedBy: user._id
     });
     res.status(200).json({ success: true, statusCode: 200, message: 'Upload deleted successfully' });
   } catch (error) {

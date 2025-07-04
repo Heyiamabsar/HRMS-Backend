@@ -10,6 +10,9 @@ import userModel from "../models/userModel.js";
 //  Add custom holiday
 export const addCustomHoliday = async (req, res) => {
   try {
+    	const userId=req.user._id
+ 	const loginUser = await userModel.findById(userId);
+
     const { date, reason , isOptional } = req.body;
     if (!date || !reason) return res.status(400).json({success:false ,statusCode:400, message: "Date and reason are required" });
     if (!moment(date, "YYYY-MM-DD", true).isValid()) return res.status(400).json({success:false ,statusCode:400, message: "Invalid date format" });
@@ -40,10 +43,10 @@ export const addCustomHoliday = async (req, res) => {
     await sendNotification({
       forRoles: ["admin", "hr"], 
       title: "Holiday Added",
-      message: `${req.user.name} added a new holiday: ${holiday.reason}`,
+      message: `${loginUser.name} added a new holiday: ${holiday.reason}`,
       link: `/holiday/${holiday._id}/details`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: loginUser._id
     });    
 
     res.status(201).json({ success:true ,statusCode:201, message: "Custom holiday added", holiday });
@@ -58,6 +61,9 @@ export const updateHoliday = async (req, res) => {
   try {
     const { id } = req.params;
     const { date, reason , isOptional} = req.body;
+
+    	const userId=req.user._id
+ 	const loginUser = await userModel.findById(userId);
 
     if (!id) return res.status(400).json({success:false , statusCode:400,  message: "Holiday ID is required" });
     if (!date && !reason) return res.status(400).json({success:false , statusCode:400,  message: "Date and reason are required" });
@@ -102,10 +108,10 @@ export const updateHoliday = async (req, res) => {
       await sendNotification({
         forRoles: ["admin", "hr"],
         title: "Custom Holiday Updated",
-        message: `${req.user.name} updated a custom holiday: ${holiday.reason}`,
+        message: `${loginUser.first_name} ${loginUser.last_name} updated a custom holiday: ${holiday.reason}`,
         link: `/holiday/${holiday._id}/details`,
         type: "admin",
-        performedBy: req.user._id
+        performedBy: loginUser._id
       });
 
     res.status(200).json({success:true , statusCode:200,   message: "Holiday updated", holiday });
