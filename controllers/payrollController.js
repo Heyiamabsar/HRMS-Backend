@@ -11,7 +11,7 @@ import { sendNotification } from "../utils/notificationutils.js";
 
 export const addPayrollBasicInfo = async (req, res) => {
   try {
-    	const loginUserId=req._id
+    	const loginUserId=req.user._id
  	const loginUser = await userModel.findById(loginUserId);
     const {
       month,
@@ -121,7 +121,7 @@ export const addPayrollBasicInfo = async (req, res) => {
 
 export const updatePayrollBasicInfo = async (req, res) => {
   try {
-    	const loginUserId=loginUser._id
+    	const loginUserId=req.user._id
  	const loginUser = await userModel.findById(loginUserId);
     const userId = req.params.id;
     const {
@@ -270,9 +270,6 @@ export const getPayrollsByMonthAndYear = async (req, res) => {
 export const getSinglePayrollsById = async (req, res) => {
   try {
     const userId = req.params.id;
-    const currentUser = loginUser; 
-    console.log("User ID:", userId);
-    console.log("Logged-in Role:", currentUser.role);
 
     const employee = await userModel.findById(userId);
     if (!employee) {
@@ -284,9 +281,9 @@ export const getSinglePayrollsById = async (req, res) => {
 
     let statusFilter = [];
 
-    if (currentUser.role === 'employee') {
+    if (employee.role === 'employee') {
       statusFilter = ['processed', 'paid'];
-    } else if (['admin', 'hr'].includes(currentUser.role)) {
+    } else if (['admin', 'hr'].includes(employee.role)) {
       statusFilter = ['pending', 'processed', 'paid', 'onHold'];
     }
 
