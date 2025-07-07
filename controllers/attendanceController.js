@@ -111,6 +111,7 @@ export const markInTime = async (req, res) => {
       },
       { upsert: true, new: true }
     );
+     await attendanceStatus.save();
 
     res.status(200).json({
       success: true,
