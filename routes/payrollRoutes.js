@@ -2,7 +2,7 @@ import express from 'express';
 import multer from "multer";
 import { storage } from "../config/cloudinary.config.js";
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
-import { addPayrollBasicInfo, exportAllUsersToExcel, fetchPayrollDataFromExcel, getPayrollsByMonthAndYear, getSinglePayrollsById, sendUserDataToExcel, updatePayrollBasicInfo } from '../controllers/payrollController.js';
+import { addPayrollBasicInfo, exportAllUsersToExcel, fetchPayrollDataFromExcel, getPayrollsByMonthAndYear, getSalarySlipById, getSinglePayrollsById, sendUserDataToExcel, updatePayrollBasicInfo } from '../controllers/payrollController.js';
 
 const payrollRouter = express.Router();
 
@@ -19,6 +19,7 @@ payrollRouter.post('/add_payroll_basic_info/:id', authorizeRoles('admin', 'hr'),
 payrollRouter.put('/update_payroll_basic_info/:id', authorizeRoles('admin', 'hr'), updatePayrollBasicInfo);
 payrollRouter.get('/get_singleUser_payroll_data/:id', authorizeRoles('admin', 'hr', 'employee'), getSinglePayrollsById);
 payrollRouter.get('/get_payroll_data', authorizeRoles('admin', 'hr'), getPayrollsByMonthAndYear);
+payrollRouter.get('/get_salary_slip/:id', authorizeRoles('admin', 'hr'), getSalarySlipById);
 
 
 

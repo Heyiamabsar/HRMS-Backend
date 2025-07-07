@@ -314,6 +314,33 @@ export const getSinglePayrollsById = async (req, res) => {
   }
 };
 
+export const getSalarySlipById = async (req, res) => {
+  try {
+    const payrollId = req.params.id;
+
+    const payroll = await payrollModel.findById(payrollId).populate('userId', 'first_name last_name role email department userId designation joining_date payrollDetails ');
+
+    if (!payroll) {
+      return res.status(404).json({
+        success: false,
+        message: "Payroll record not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Payroll record fetched for ${payroll.userId.first_name} ${payroll.userId.last_name}`,
+      data: payroll,
+    });
+  } catch (error) {
+    console.error("Error fetching payroll by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
 
 
 
