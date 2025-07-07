@@ -27,14 +27,24 @@ const attendanceSchema = new mongoose.Schema({
     enum: ['Present', 'Absent', 'Leave', 'Half Day'],
     default: 'Absent'
   },
-  location: {
-    type: {
-      latitude: { type: Number },
-      longitude: { type: Number },
-      address: { type: Object } ,
-      displayName: { type: String } 
+    location: {
+      checkIn: {
+        latitude: { type: Number },
+        longitude: { type: Number },
+        address: { type: Object },
+        displayName: { type: String },
+        punchedFrom: { type: String },
+        
+      },
+      checkOut: {
+        latitude: { type: Number },
+        longitude: { type: Number },
+        address: { type: Object },
+        displayName: { type: String },
+        punchedFrom: { type: String }
+      }
     }
-  }
+
 }, { timestamps: true });
 
 attendanceSchema.index({ userId: 1, date: 1 }, { unique: true });

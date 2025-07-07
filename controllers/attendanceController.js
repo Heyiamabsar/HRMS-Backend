@@ -30,11 +30,11 @@ export const markInTime = async (req, res) => {
       });
     }
 
-    if (existing && existing.location?.address) {
+    if (existing && existing.location?.checkIn.address) {
       return res.status(200).json({
         success: true,
         message: "Address already stored for today",
-        address: existing.location.address,
+        address: existing.location.checkIn.address,
         source: "attendance_cache",
       });
     }
@@ -99,11 +99,13 @@ export const markInTime = async (req, res) => {
           inTime,
           status: todayStatus,
           location: {
+            checkIn:{
             latitude,
             longitude,
             address,
             displayName,
             punchedFrom,
+            }
           },
         },
       },
@@ -251,11 +253,13 @@ export const markOutTime = async (req, res) => {
         $set: {
           status: todayStatus,
           location: {
+            checkOut:{
             latitude,
             longitude,
             address,
             displayName,
-            punchedFrom
+            punchedFrom,
+            }
           },
         },
       },
