@@ -92,7 +92,7 @@ export const markInTime = async (req, res) => {
       });
     }
 
-    const attendance = await AttendanceModel.findOneAndUpdate(
+    const attendanceStatus = await AttendanceModel.findOneAndUpdate(
       { userId, date },
       {
         $set: {
