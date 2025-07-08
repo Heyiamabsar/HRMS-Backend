@@ -3,7 +3,7 @@ import notifyModel from "../models/notifyModel.js";
 export const getNotifications = async (req, res) => {
   try {
     const role = req.user.role;
-
+    console.log('')
     const notifications = await notifyModel.find({
       $or: [
         { userId: req.user._id },

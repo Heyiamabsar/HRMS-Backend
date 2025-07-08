@@ -117,7 +117,7 @@ export const markInTime = async (req, res) => {
       success: true,
       statusCode: 200,
       message: "Punched IN successfully",
-      attendance,
+      attendanceStatus,
       punchedFrom
     });
   } catch (err) {
