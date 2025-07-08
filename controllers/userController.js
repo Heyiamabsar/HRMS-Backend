@@ -2,6 +2,7 @@ import User from '../models/userModel.js';
 import moment from 'moment-timezone';
 import bcrypt from 'bcryptjs';
 import { sendNotification } from '../utils/notificationutils.js';
+import userModel from '../models/userModel.js';
 
 
 // Save User Time Zone

@@ -351,6 +351,7 @@ export const getTodayAttendance = async (req, res) => {
       date,
       attendance,
     });
+    await attendance.save();
   } catch (err) {
     res.status(500).json({
       success: false,
