@@ -92,7 +92,7 @@ export const markInTime = async (req, res) => {
       });
     }
 
-    const attendanceStatus = await AttendanceModel.findOneAndUpdate(
+    const attendance = await AttendanceModel.findOneAndUpdate(
       { userId, date },
       {
         $set: {
@@ -111,13 +111,13 @@ export const markInTime = async (req, res) => {
       },
       { upsert: true, new: true }
     );
-     await attendanceStatus.save();
+     await attendance.save();
 
     res.status(200).json({
       success: true,
       statusCode: 200,
       message: "Punched IN successfully",
-      attendanceStatus,
+      attendance,
       punchedFrom
     });
   } catch (err) {
@@ -248,7 +248,7 @@ export const markOutTime = async (req, res) => {
       }
     }
 
-    const attendanceStatus = await AttendanceModel.findOneAndUpdate(
+    const attendance = await AttendanceModel.findOneAndUpdate(
       { userId, date },
       {
         $set: {
@@ -267,13 +267,13 @@ export const markOutTime = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    await attendanceStatus.save();
+    await attendance.save();
 
     res.status(200).json({
       success: true,
       statusCode: 200,
       message: "Punched OUT successfully",
-      attendanceStatus,
+      attendance,
       punchedFrom
     });
   } catch (err) {
