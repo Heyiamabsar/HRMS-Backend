@@ -26,11 +26,26 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://hrms-backend-1-u9qn.onrender.com",
+  "https://hrms-backend-yrrr.onrender.com"
+];
+
 app.use(cors({
-    origin: "*", 
-    methods: ["GET", "POST", "PUT", "DELETE","PATCH"],
-    credentials: true,
+  origin: function (origin, callback) {
+
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  credentials: true
 }));
+
 
 
 app.use('/downloads', express.static(path.join(__dirname, 'public/downloads')));
