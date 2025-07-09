@@ -28,8 +28,8 @@ app.use(express.json());
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://hrms-backend-1-u9qn.onrender.com",
-  "https://hrms-backend-yrrr.onrender.com"
+  "https://hrms-frontend-git-dev-falcon-infotechs-projects.vercel.app/",
+  "https://hrms-frontend-amber.vercel.app"
 ];
 
 app.use(cors({
