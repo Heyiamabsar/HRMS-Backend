@@ -14,11 +14,13 @@ export const register = async (req, res) => {
 
     const { email, } = req.body;
     const userId=req.user._id
+    console.log(userId)
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success : false,  statusCode: 400,message:"Email already exists", error: "Email already exists" });
     }
   
+    
     const user = await userModel.create(req.body);
     const loginUser = await userModel.findById(userId);
     const userObj = user.toObject();
