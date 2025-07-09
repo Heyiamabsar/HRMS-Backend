@@ -30,14 +30,7 @@ export const markInTime = async (req, res) => {
       });
     }
 
-    if (existing && existing.location?.checkIn.address) {
-      return res.status(200).json({
-        success: true,
-        message: "Address already stored for today",
-        address: existing.location.checkIn.address,
-        source: "attendance_cache",
-      });
-    }
+
 
     if (existing && existing.inTime) {
       return res.status(400).json({
@@ -47,6 +40,8 @@ export const markInTime = async (req, res) => {
       });
     }
 
+    
+
     const response = await axios.get(
       `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
       {
@@ -55,7 +50,7 @@ export const markInTime = async (req, res) => {
         },
       }
     );
-    const address = response?.data?.address;
+    let address = response?.data?.address;
     const displayName = response?.data?.display_name;
     const userAgent = req.headers["user-agent"] || "";
       let punchedFrom = "Unknown";
@@ -98,20 +93,20 @@ export const markInTime = async (req, res) => {
         $set: {
           inTime,
           status: todayStatus,
-          location: {
-            checkIn:{
+          'location.checkIn': {
             latitude,
             longitude,
             address,
             displayName,
             punchedFrom,
-            }
+
           },
         },
       },
       { upsert: true, new: true }
     );
      await attendanceStatus.save();
+     
 
     res.status(200).json({
       success: true,
@@ -253,14 +248,13 @@ export const markOutTime = async (req, res) => {
       {
         $set: {
           status: todayStatus,
-          location: {
-            checkOut:{
+          'location.checkOut':{
             latitude,
             longitude,
             address,
             displayName,
             punchedFrom,
-            }
+            
           },
         },
       },

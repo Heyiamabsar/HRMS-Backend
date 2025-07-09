@@ -101,14 +101,12 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "hr", "employee"],
       default: "employee",
     },
-    payrollDetails:{
-      type:{
-        BankName:{ type: String },
-        accountNumber:{ type: Number },
-        pfNumber:{ type: Number },
-        ifscCode:{ type: String },
-        UNA:{ type: Number },
-      }
+    payrollDetails: {
+      BankName: String,
+      accountNumber: Number,
+      pfNumber: Number,
+      ifscCode: String,
+      UNA: Number
     }
   },
   {
