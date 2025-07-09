@@ -53,7 +53,7 @@ export const applyLeave = async (req, res) => {
       forRoles: ["admin", "hr"], 
       title: "New Leave Request",
       message: `${user.first_name} ${user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
-      link: `/admin/leave-requests`,
+      link: `/leave`,
       type: "user",
       performedBy: user._id 
     });
@@ -61,7 +61,7 @@ export const applyLeave = async (req, res) => {
       userId: user._id, 
       title: "Leave Request Submitted",
       message: `Your leave request from ${leave.fromDate} to ${leave.toDate} has been submitted.`,
-      link: `/user/leave-status`,
+      link: `/leavestatus`,
       type: "user"
     });
 
@@ -205,7 +205,7 @@ export const updateLeaveStatus = async (req, res) => {
       userId: leave.employee, 
       title: `Your Leave Status Updated`, 
       message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
-      link: `/user/leave-status`,
+      link: `/leavestatus`,
       type: "admin",
       performedBy: req.user._id
     });
@@ -213,7 +213,7 @@ export const updateLeaveStatus = async (req, res) => {
       forRoles: ["admin", "hr"],
       title: `${loginUser.first_name} ${loginUser.last_name}'s Leave Status Updated`, 
       message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
-      link: `/user/leave-status`,
+      link: `/leave`,
       type: "admin",
       performedBy: req.user._id
     });

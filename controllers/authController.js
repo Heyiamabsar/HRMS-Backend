@@ -30,7 +30,7 @@ export const register = async (req, res) => {
       forRoles: ["admin", "hr"], 
       title: "New Employee Joined",
       message: `${loginUser.first_name} ${loginUser.last_name}  added a new employee: ${user.first_name} ${user.last_name}`,
-      link: `/employee/${user._id}/profile`,
+      link: `/employees`,
       type: "admin",
       performedBy: loginUser._id
     });

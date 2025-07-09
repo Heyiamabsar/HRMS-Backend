@@ -87,7 +87,7 @@ export const addPayrollBasicInfo = async (req, res) => {
       userId: employee._id,
       title: "Payroll Generated",
       message: `Your payroll for ${payDate} has been generated.`,
-      link: `/user/payroll/${payroll._id}`,
+      // link: `/user/payroll/${payroll._id}`,
       type: "admin",
       performedBy:loginUser._id
     });
@@ -97,7 +97,7 @@ export const addPayrollBasicInfo = async (req, res) => {
       forRoles: ["admin", "hr"],
       title: "Payroll Created",
       message: `${loginUser.first_name} ${loginUser.last_name} created payroll for ${employee.first_name}  ${employee.last_name}`,
-      link: `/admin/payroll/${payroll._id}`,
+      link: `/payroll`,
       type: "admin",
       performedBy: loginUser._id
     });
@@ -195,7 +195,7 @@ export const updatePayrollBasicInfo = async (req, res) => {
       userId: employee._id,
       title: "Payroll Updated",
       message: `Your payroll for ${payDate} has been updated.`,
-      link: `/user/payroll/${payroll._id}`,
+      link: `/payroll`,
       type: "admin",
       performedBy: loginUser._id
     });
@@ -205,7 +205,7 @@ export const updatePayrollBasicInfo = async (req, res) => {
       forRoles: ["admin", "hr"],
       title: "Payroll Updated",
       message: `${loginUser.first_name} ${loginUser.last_name} updated payroll for ${employee.first_name} ${employee.last_name}`,
-      link: `/admin/payroll/${payroll._id}`,
+      // link: `/admin/payroll/${payroll._id}`,
       type: "admin",
       performedBy: loginUser._id
     });

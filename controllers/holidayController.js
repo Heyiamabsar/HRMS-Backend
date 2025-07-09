@@ -44,7 +44,7 @@ export const addCustomHoliday = async (req, res) => {
       forRoles: ["admin", "hr"], 
       title: "Holiday Added",
       message: `${loginUser.name} added a new holiday: ${holiday.reason}`,
-      link: `/holiday/${holiday._id}/details`,
+      link: `/holidays`,
       type: "admin",
       performedBy: loginUser._id
     });    
@@ -109,7 +109,7 @@ export const updateHoliday = async (req, res) => {
         forRoles: ["admin", "hr"],
         title: "Custom Holiday Updated",
         message: `${loginUser.first_name} ${loginUser.last_name} updated a custom holiday: ${holiday.reason}`,
-        link: `/holiday/${holiday._id}/details`,
+        link: `/holidays`,
         type: "admin",
         performedBy: loginUser._id
       });

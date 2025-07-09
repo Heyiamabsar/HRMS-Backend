@@ -81,7 +81,7 @@ export const markInTime = async (req, res) => {
         } Logged in late today at ${moment(inTime)
           .tz(userTimeZone)
           .format("hh:mm AM")}`,
-        link: `/employee/${userId}/profile`,
+        link: `/attendance`,
         type: "user",
         performedBy: user._id,
       });

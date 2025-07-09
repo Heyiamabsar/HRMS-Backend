@@ -52,7 +52,7 @@ export const handleFileUpload = async (req, res) => {
       forRoles: ["admin", "hr"],
       title: "New Files Uploaded",
       message: `${loginUser.first_name} ${loginUser.last_name} uploaded ${req.files.length} file(s): "${newUpload.title}"`,
-      link: `/uploads/${savedUpload._id}`,
+      // link: `/uploads/${savedUpload._id}`,
       type: "admin",
       performedBy: loginUser._id
     });
@@ -136,7 +136,7 @@ export const deleteUpload = async (req, res) => {
       forRoles: ["admin", "hr"],
       title: "File Upload Deleted",
       message: `${loginUser.first_name} ${loginUser.last_name} deleted uploaded files titled "${upload.title}"`,
-      link: `/uploads`,
+      // link: `/uploads`,
       type: "admin",
       performedBy: loginUser._id
     });

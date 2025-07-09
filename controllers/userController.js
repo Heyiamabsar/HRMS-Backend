@@ -115,7 +115,7 @@ export const updateUser = async (req, res) => {
         forRoles: ["admin", "hr"],
         title: "User Updated",
         message: `${loginUser.first_name} ${loginUser.last_name} updated details of ${updatedUser.first_name} ${updatedUser.last_name}`,
-        link: `/admin/users/${updatedUser._id}`,
+        link: `/employees`,
         type: "admin",
         performedBy: loginUser._id
       });
@@ -162,7 +162,7 @@ export const updateUserPassword = async (req, res) => {
       forRoles: ["admin", "hr"],
       title: "Password Updated",
       message: `${loginUser.first_name} ${loginUser.last_name} updated the password for a user`,
-      link: `/admin/users/${req.params.id}`,
+      // link: `/admin/users/${req.params.id}`,
       type: "admin",
       performedBy: loginUser._id
     });
@@ -171,7 +171,7 @@ export const updateUserPassword = async (req, res) => {
       userId: updatedUser._id,
       title: "Your Password was Updated",
       message: `Your account password was updated by ${loginUser.first_name} ${loginUser.last_name}.`,
-      link: `/user/profile`,
+      // link: `/user/profile`,
       type: "user",
       performedBy: loginUser._id
     });
@@ -209,7 +209,7 @@ export const deleteUser = async (req, res) => {
       forRoles: ["admin", "hr"],
       title: "User Deleted",
       message: `${loginUser.first_name} ${loginUser.last_name} deleted user ${deletedUser.first_name} ${deletedUser.last_name}`,
-      link: `/admin/users`,
+      link: `/employees`,
       type: "admin",
       performedBy: loginUser._id
     });
