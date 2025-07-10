@@ -45,7 +45,7 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true
 }));
-
+app.options('*', cors()); 
 
 
 app.use('/downloads', express.static(path.join(__dirname, 'public/downloads')));
@@ -60,6 +60,10 @@ app.use('/api/report', reportRouter);
 app.use('/api/holidays', holidayRouter);
 app.use('/api/cloud_excel', cloudExcelRouter);
 app.use('/api/notifications', notificationRouter);
+
+app.get("/", (req, res) => {
+  res.send("HRMS Backend is running ");
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
