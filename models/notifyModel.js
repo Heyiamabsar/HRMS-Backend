@@ -7,6 +7,7 @@ const NotifySchema = new mongoose.Schema(
     title: String,
     message: String,
     performedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // NEW
+    readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     isRead: { type: Boolean, default: false },
     link: String,
     type: { type: String, enum: ["admin", "user"], default: "user" },

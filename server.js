@@ -28,7 +28,7 @@ app.use(express.json());
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://hrms-frontend-git-dev-falcon-infotechs-projects.vercel.app/",
+  "https://hrms-frontend-git-dev-falcon-infotechs-projects.vercel.app",
   "https://hrms-frontend-amber.vercel.app"
 ];
 
