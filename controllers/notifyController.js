@@ -13,13 +13,18 @@ export const getNotifications = async (req, res) => {
       .sort({ createdAt: -1 })
       .populate("performedBy", "name role").lean(); 
 
-      const data = notifications.map((n) => {
-      const isRead = n.userId
-        ? n.isRead
-        : n.readBy?.some(id => id.toString() === userId);
+    const data = notifications
+      .map((n) => {
+        const isRead = n.userId
+          ? n.isRead
+          : n.readBy?.some(id => id.toString() === userId);
 
-      return { ...n, isRead };
-    });
+        const isDismissed = n.dismissedBy?.some(id => id.toString() === userId);
+
+        return { ...n, isRead, isDismissed };
+      })
+      .filter(n => !n.isDismissed);
+
     
 
     res.status(200).json({ success: true , statusCode:200, data });
@@ -63,4 +68,44 @@ export const markNotificationAsRead = async (req, res) => {
     res.status(500).json({ success: false, statusCode:500, message: "Something went wrong" });
   }
 };
+
+export const dismissNotification = async (req, res) => {
+  try {
+    const notificationId = req.params.id;
+    const userId = req.user._id;
+
+    const notification = await notifyModel.findById(notificationId);
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        statusCode: 404,
+        message: "Notification not found",
+      });
+    }
+
+    if (notification.dismissedBy?.includes(userId)) {
+      return res.status(200).json({
+        success: true,
+        statusCode: 200,
+        message: "Already dismissed",
+      });
+    }
+
+    notification.dismissedBy.push(userId);
+    await notification.save();
+
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: "Notification dismissed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: "Something went wrong",
+    });
+  }
+};
+
 
