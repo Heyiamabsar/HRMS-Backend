@@ -47,7 +47,6 @@ export const saveUserTimeZone = async (req, res) => {
 };
 
 
-
 // Get All Users
 export const getAllUsers = async (req, res) => {
   try {
@@ -97,8 +96,8 @@ export const getUserById = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     	const loginUserId=req.user._id
- 	const loginUser = await userModel.findById(loginUserId);
-     const { password, ...updateData } = req.body;
+    	const loginUser = await userModel.findById(loginUserId);
+      const { password, ...updateData } = req.body;
 
      if(password){
        
@@ -130,6 +129,68 @@ export const updateUser = async (req, res) => {
     res.status(500).json({ statusCode: 500, success: false, message: 'Failed to update user', error: error.message });
   }
 };
+
+//update profile by self
+export const updateProfileBySelf = async (req, res) => {
+  try {
+
+
+    const userId = req?.user?._id;
+    const { department, address } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID not found in token',
+      });
+    }
+
+    const updateData = {};
+
+    // Update department
+    if (department) updateData['department'] = department;
+
+    // Update nested address using dot notation
+    if (address) {
+      if (address.country) updateData['address.country'] = address.country;
+      if (address.state) updateData['address.state'] = address.state;
+      if (address.city) updateData['address.city'] = address.city;
+      if (address.village) updateData['address.village'] = address.village;
+      if (address.address_line) updateData['address.address_line'] = address.address_line;
+      if (address.pincode) updateData['address.pincode'] = address.pincode;
+    }
+
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true, strict: false }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser,
+    });
+
+  } catch (error) {
+    console.error("Update Error: ", error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message,
+    });
+  }
+};
+
+
 
 export const updateUserPassword = async (req, res) => {
   try {

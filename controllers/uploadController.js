@@ -74,7 +74,6 @@ export const handleFileUpload = async (req, res) => {
 };
 
 
-
 export const getAllUploads = async (req, res) => {
   try {
     const uploads = await UploadModel.find().populate('user');
