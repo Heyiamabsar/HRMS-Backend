@@ -59,14 +59,14 @@ const userSchema = new mongoose.Schema(
       country: { type: String, required: [true, "Country is required"] },
       state: { type: String, required: [true, "State is required"] },
       city: { type: String, required: [true, "City is required"] },
-      village: { type: String, required: [true, "Village is required"] },
+      village: { type: String, required: [false, "Village is required"] },
       address_line: {
         type: String,
-        required: [true, "Address line is required"],
+        required: [false, "Address line is required"],
       },
       pincode: {
         type: String,
-        required: [true, "Pincode is required"],
+        required: [false, "Pincode is required"],
         match: [/^[0-9]{6}$/, "Pincode must be a 6-digit number"],
       },
     },
