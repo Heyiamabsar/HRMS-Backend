@@ -1,5 +1,5 @@
 import express from 'express';
-import { deleteUser, getAllUsers, getDashboard, getUserById, saveUserTimeZone, updateProfileBySelf, updateUser, updateUserPassword } from '../controllers/userController.js';
+import { deleteUser, getAllDepartments, getAllDesignations, getAllUsers, getDashboard, getUserById, saveUserTimeZone, updateProfileBySelf, updateUser, updateUserPassword } from '../controllers/userController.js';
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
 const employeeRouter = express.Router();
 
@@ -8,6 +8,8 @@ employeeRouter.get('/dashboard', authenticate, getDashboard);
 employeeRouter.use(authenticate);
 employeeRouter.get('/', authorizeRoles('admin', 'hr'), getAllUsers);
 employeeRouter.get('/:id', authorizeRoles('admin', 'hr', 'employee'), getUserById);
+employeeRouter.get('/department', authorizeRoles('admin', 'hr', 'employee'), getAllDepartments);
+employeeRouter.get('/designation', authorizeRoles('admin', 'hr', 'employee'), getAllDesignations);
 employeeRouter.put('/:id', authorizeRoles('admin', 'hr'), updateUser);
 employeeRouter.delete('/:id', authorizeRoles('admin', 'hr'), deleteUser);
 employeeRouter.patch('/update_profile_by_self', authorizeRoles('admin', 'hr','employee'), updateProfileBySelf);

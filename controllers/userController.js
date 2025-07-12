@@ -3,6 +3,8 @@ import moment from 'moment-timezone';
 import bcrypt from 'bcryptjs';
 import { sendNotification } from '../utils/notificationutils.js';
 import userModel from '../models/userModel.js';
+import departmentModel from '../models/departmentModel.js';
+import designationModel from '../models/designationModel.js';
 
 
 // Save User Time Zone
@@ -97,12 +99,27 @@ export const updateUser = async (req, res) => {
   try {
     	const loginUserId=req.user._id
     	const loginUser = await userModel.findById(loginUserId);
-      const { password, ...updateData } = req.body;
+      const { password, department, designation,  ...updateData } = req.body;
 
      if(password){
-       
-       res.status(404).json({ statusCode: 404, success: false, message: "You don't have permission to reset the password" });
+      return res.status(404).json({ statusCode: 404, success: false, message: "You don't have permission to reset the password" });
      }
+    if (department) {
+      const departmentExists = await departmentModel.findOne({ name: department });
+      if (!departmentExists) {
+        await departmentModel.create({ name: department });
+      }
+      updateData.department = department;
+    }
+  
+  
+    if (designation) {
+      const designationExists = await designationModel.findOne({ name: designation });
+      if (!designationExists) {
+        await designationModel.create({ name: designation });
+      }
+      updateData.designation = designation;
+    }
      
     const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
@@ -296,5 +313,45 @@ export const getDashboard = async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ statusCode: 500, success: false, message: 'Failed to fetch dashboard', error: error.message });
+  }
+};
+
+
+
+export const getAllDepartments = async (req, res) => {
+  try {
+    const departments = await departmentModel.find().sort({ name: 1 }); // optional: sorted A-Z
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      data: departments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: "Failed to fetch departments",
+      error: error.message,
+    });
+  }
+};
+
+
+
+export const getAllDesignations = async (req, res) => {
+  try {
+    const designations = await designationModel.find().sort({ name: 1 });
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      data: designations,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: "Failed to fetch designations",
+      error: error.message,
+    });
   }
 };

@@ -5,6 +5,8 @@ import requestIp from 'request-ip';
 import geoip from 'geoip-lite';
 import userModel from '../models/userModel.js';
 import { sendNotification } from '../utils/notificationutils.js';
+import designationModel from '../models/designationModel.js';
+import departmentModel from '../models/departmentModel.js';
 dotenv.config();
 
 // testController
@@ -12,14 +14,25 @@ dotenv.config();
 export const register = async (req, res) => {
   try {
 
-    const { email, } = req.body;
+    const { email,department, designation } = req.body;
     const userId=req.user._id
     console.log(userId)
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success : false,  statusCode: 400,message:"Email already exists", error: "Email already exists" });
     }
-  
+
+
+    const departmentExists = await departmentModel.findOne({ name: department });
+    if (!departmentExists) {
+      await departmentModel.create({ name: department });
+    }
+
+
+    const designationExists = await designationModel.findOne({ name: designation });
+    if (!designationExists) {
+      await designationModel.create({ name: designation });
+    }
     
     const user = await userModel.create(req.body);
     const loginUser = await userModel.findById(userId);
