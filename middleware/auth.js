@@ -26,34 +26,49 @@ export const authenticate = async(req, res, next) => {
 };
 
 export const authorizeRoles = (...roles) => {
+
   return async (req, res, next) => {
     try {
-      
+       console.log("!req?.user",!req?.user)
+       console.log("!req?.user?._id",!req?.user?._id)
+       
+      if (!req?.user || !req?.user?._id) {
+        return res.status(401).json({
+          success: false,
+          statusCode: 401,
+          message: 'Unauthorized: User not authenticated',
+        });
+      }
+
       const user = await userModel.findById(req.user._id).select('role');
-      if (!user) return res.status(404).json({
-        success: false,
-        statusCode: 404,
-        message: 'User not found'
-      });
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          statusCode: 404,
+          message: 'User not found',
+        });
+      }
 
       if (!roles.includes(user.role)) {
         return res.status(403).json({
           success: false,
           statusCode: 403,
-          message: 'Access denied'
+          message: 'Access denied',
         });
       }
+
       next();
     } catch (err) {
       res.status(500).json({
         success: false,
         statusCode: 500,
         message: 'Server Error',
-        error: err.message
+        error: err.message,
       });
     }
   };
 };
+
 
 
 export const isVerifiedPass = async (req, res, next) => {

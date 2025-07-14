@@ -320,7 +320,9 @@ export const getDashboard = async (req, res) => {
 
 export const getAllDepartments = async (req, res) => {
   try {
-    const departments = await departmentModel.find().sort({ name: 1 }); // optional: sorted A-Z
+    console.log("test")
+    const departments = await departmentModel.find()
+    console.log("department",departments)
     res.status(200).json({
       success: true,
       statusCode: 200,
@@ -331,7 +333,7 @@ export const getAllDepartments = async (req, res) => {
       success: false,
       statusCode: 500,
       message: "Failed to fetch departments",
-      error: error.message,
+      error: error.stack,
     });
   }
 };

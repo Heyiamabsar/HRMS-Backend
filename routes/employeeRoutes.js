@@ -3,13 +3,13 @@ import { deleteUser, getAllDepartments, getAllDesignations, getAllUsers, getDash
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
 const employeeRouter = express.Router();
 
-employeeRouter.get('/dashboard', authenticate, getDashboard);
+// employeeRouter.get('/dashboard', authenticate, getDashboard);
 
 employeeRouter.use(authenticate);
 employeeRouter.get('/', authorizeRoles('admin', 'hr'), getAllUsers);
+employeeRouter.get('/designation', getAllDesignations);
+employeeRouter.get('/department', getAllDepartments);
 employeeRouter.get('/:id', authorizeRoles('admin', 'hr', 'employee'), getUserById);
-employeeRouter.get('/department', authorizeRoles('admin', 'hr', 'employee'), getAllDepartments);
-employeeRouter.get('/designation', authorizeRoles('admin', 'hr', 'employee'), getAllDesignations);
 employeeRouter.put('/:id', authorizeRoles('admin', 'hr'), updateUser);
 employeeRouter.delete('/:id', authorizeRoles('admin', 'hr'), deleteUser);
 employeeRouter.patch('/update_profile_by_self', authorizeRoles('admin', 'hr','employee'), updateProfileBySelf);

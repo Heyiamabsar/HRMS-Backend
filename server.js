@@ -51,8 +51,8 @@ app.options('*', cors());
 
 app.use('/downloads', express.static(path.join(__dirname, 'public/downloads')));
 app.use("/api/auth", authRoutes);
-app.use("/api/payroll", payrollRouter);
 app.use("/api/employee", employeeRouter);
+app.use("/api/payroll", payrollRouter);
 app.use("/api/hr", hrRouter);
 app.use('/api', uploadRouter);
 app.use('/api/attendance', attendanceRouter);

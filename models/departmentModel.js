@@ -9,5 +9,5 @@ const departmentSchema = new mongoose.Schema({
     trim: true,
   }
 });
-const departmentModel = mongoose.model("Department", departmentSchema);
+const departmentModel = mongoose.model("department", departmentSchema);
 export default departmentModel;
