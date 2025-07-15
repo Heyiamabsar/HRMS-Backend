@@ -146,3 +146,91 @@ export const deleteUpload = async (req, res) => {
     res.status(500).json({ success: false, statusCode: 500, error: 'Server error' });
   }
 };
+
+export const getUserUploads = async (req, res) => {
+  try {
+    const userId = req.params.id;
+console.log("userId",userId)
+    // Step 1: Get user and check
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Step 2: Get uploads using document IDs
+    const uploadDetails = await UploadModel.find({
+      _id: { $in: user.uploads }
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: uploadDetails.length,
+      uploads: uploadDetails
+    });
+
+  } catch (error) {
+    console.error("[getUserUploads]", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
+
+export const updateUploadById = async (req, res) => {
+  try {
+    const uploadId = req.params.id;
+    const { title } = req.body;
+    const loginUser = await userModel.findById(req.user._id);
+
+    const upload = await UploadModel.findById(uploadId);
+    if (!upload) {
+      return res.status(404).json({
+        success: false,
+        message: "Upload not found",
+      });
+    }
+
+    // ✅ Update title
+    if (title) {
+      upload.title = title;
+    }
+
+    // ✅ Append files if present
+    if (req.files && req.files.length > 0) {
+      const newFiles = req.files.map(file => ({
+        _id: new mongoose.Types.ObjectId(),
+        filename: file.originalname,
+        url: file.path,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
+
+      upload.files = newFiles;
+    }
+
+    // ✅ Save updated document
+    const updated = await upload.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Upload updated successfully",
+      upload: updated,
+      user: loginUser._id,
+    });
+
+  } catch (error) {
+    console.error("❌ [updateUploadById]", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
+};
+
