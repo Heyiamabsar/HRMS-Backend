@@ -74,8 +74,8 @@ export const login = async (req, res) => {
       statusCode: 200,
       message: 'Login successful',
       accessToken,
-      refreshToken,
-       token,
+      // refreshToken,
+      //  token,
        user,
        });
   } catch (err) {
@@ -160,7 +160,7 @@ export const refreshToken =async (req, res) => {
         httpOnly: true,
         secure: true,
         sameSite: 'Strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 15 * 24 * 60 * 60 * 1000,
       });
 
       // const newAccessToken = generateAccessToken({ _id: user.id, role: user.role });
