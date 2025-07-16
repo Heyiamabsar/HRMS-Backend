@@ -14,7 +14,7 @@ dotenv.config();
 
 const generateAccessToken = (user) => {
   return jwt.sign(
-    { id: user._id, role: user.role },
+    { _id: user._id, role: user.role },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
   );
@@ -22,7 +22,7 @@ const generateAccessToken = (user) => {
 
 const generateRefreshToken = (user) => {
   const refreshToken = jwt.sign(
-    { id: user._id, role: user.role },
+    { _id: user._id, role: user.role },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
   );
@@ -35,16 +35,22 @@ const generateRefreshToken = (user) => {
 export const login = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await userModel.findOne({ email }).select('-password');
+    const user = await userModel.findOne({ email });
+    if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
+    }
 
     if (!user) {
       return res.status(404).json({ success: false, statusCode: 404, message: 'User not found' });
     }
 
-      const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
+      const token = jwt.sign(
+    { _id: user._id, role: user.role },process.env.JWT_SECRET,{ expiresIn: '9h' });
 
-  await refreshModel.create({ userId: user._id, token: refreshToken });
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+       await refreshModel.create({ userId: user._id, token: refreshToken });
 
       const ip = requestIp.getClientIp(req);
       const geo =geoip.lookup(ip && ip !== '::1' ? ip : '49.37.210.1');
@@ -60,7 +66,7 @@ export const login = async (req, res) => {
         httpOnly: true,
         secure: true,              
         sameSite: 'Strict',        
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 15 * 24 * 60 * 60 * 1000,
       });
 
     res.json({
@@ -69,7 +75,7 @@ export const login = async (req, res) => {
       message: 'Login successful',
       accessToken,
       refreshToken,
-      //  token,
+       token,
        user,
        });
   } catch (err) {
@@ -140,7 +146,7 @@ export const refreshToken =async (req, res) => {
         return res.status(403).json({ success: false, message: "Refresh token expired or invalid" });
       }
 
-      const userId = decoded.id;
+      const userId = decoded._id;
       const user = await userModel.findById(userId);
       if (!user) {
         return res.status(404).json({ success: false, message: "User not found" });

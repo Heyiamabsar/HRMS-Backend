@@ -2,7 +2,7 @@ import AttendanceModel from "../models/attendanceModule.js";
 import LeaveModel from "../models/leaveModel.js";
 import userModel from "../models/userModel.js";
 import mongoose from "mongoose";
-import ExcelJS from 'exceljs';
+import ExcelJS from "exceljs";
 
 import moment from "moment-timezone";
 import { sendNotification } from "../utils/notificationutils.js";
@@ -11,13 +11,12 @@ export const applyLeave = async (req, res) => {
   try {
     const { leaveType, fromDate, toDate, reason } = req.body;
     const userId = req.user?._id;
-     const user = await userModel.findById(userId);
+    const user = await userModel.findById(userId);
 
     const leaveDays =
       Math.ceil(
         (new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24)
       ) + 1;
-
 
     const overlappingLeave = await LeaveModel.findOne({
       userId,
@@ -50,19 +49,19 @@ export const applyLeave = async (req, res) => {
     });
 
     await sendNotification({
-      forRoles: ["admin", "hr"], 
+      forRoles: ["admin", "hr"],
       title: "New Leave Request",
       message: `${user.first_name} ${user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
       link: `/leave`,
       type: "user",
-      performedBy: user._id 
+      performedBy: user._id,
     });
     await sendNotification({
-      userId: user._id, 
+      userId: user._id,
       title: "Leave Request Submitted",
       message: `Your leave request from ${leave.fromDate} to ${leave.toDate} has been submitted.`,
       link: `/leavestatus`,
-      type: "user"
+      type: "user",
     });
 
     res.status(201).json({
@@ -85,8 +84,8 @@ export const updateLeaveStatus = async (req, res) => {
   try {
     const leaveId = req.params.id;
     const { status, fromDate, toDate } = req.body;
-    	const userId=req.user._id
- 	    const loginUser = await userModel.findById(userId);
+    const userId = req.user._id;
+    const loginUser = await userModel.findById(userId);
 
     if (!["approved", "rejected", "cancelled"].includes(status)) {
       return res.status(400).json({
@@ -144,22 +143,53 @@ export const updateLeaveStatus = async (req, res) => {
         dates.push(date.format("YYYY-MM-DD"));
       }
 
-      const operations = dates.map((date) => ({
-        updateOne: {
-          filter: { date, userId: leave.employee },
-          update: { $set: { status: "Leave" } },
-          upsert: true,
-        },
-      }));
-      await AttendanceModel.bulkWrite(operations);
+      let operations;
+      if (leave.leaveType === "firstHalf" || leave.leaveType === "secondHalf") {
+        const leaveLabel =
+          leave.leaveType === "firstHalf"
+            ? "First Half Leave"
+            : "Second Half Leave";
 
-      if (leave.leaveType === "casual" || leave.leaveType === "vacation") {
-        leave.leaveBalance = leaveBalance - leave.leaveTaken;
-      } else if (leave.leaveType === "sick") {
-        user.sickLeaves = (user.sickLeaves || 0) + leave.leaveTaken;
-      } else if (leave.leaveType === "LOP" || leave.leaveType === "unpaid") {
-        user.unpaidLeaves = (user.unpaidLeaves || 0) + leave.leaveTaken;
+        operations = dates.map((date) => ({
+          updateOne: {
+            filter: { date, userId: leave.employee },
+            update: { $set: { status: leaveLabel } },
+            upsert: true,
+          },
+        }));
+
+        // Deduct 0.5 leave from balance
+        leave.leaveTaken = 0.5;
+        leave.leaveBalance = leaveBalance - 0.5;
+
+        if (["sick"].includes(leave.leaveType)) {
+          user.sickLeaves = (user.sickLeaves || 0) + 0.5;
+          leave.sickLeave = user.sickLeaves;
+        } else if (["LOP", "unpaid"].includes(leave.leaveType)) {
+          user.unpaidLeaves = (user.unpaidLeaves || 0) + 0.5;
+          leave.unPaidLeave = user.unpaidLeaves;
+        }
+      } else {
+        operations = dates.map((date) => ({
+          updateOne: {
+            filter: { date, userId: leave.employee },
+            update: { $set: { status: "Leave" } },
+            upsert: true,
+          },
+        }));
+
+        if (["casual", "vacation"].includes(leave.leaveType)) {
+          leave.leaveBalance = leaveBalance - leave.leaveTaken;
+        } else if (leave.leaveType === "sick") {
+          user.sickLeaves = (user.sickLeaves || 0) + leave.leaveTaken;
+          leave.sickLeave = user.sickLeaves;
+        } else if (["LOP", "unpaid"].includes(leave.leaveType)) {
+          user.unpaidLeaves = (user.unpaidLeaves || 0) + leave.leaveTaken;
+          leave.unPaidLeave = user.unpaidLeaves;
+        }
       }
+
+      await AttendanceModel.bulkWrite(operations);
 
       leave.sickLeave = user.sickLeaves;
       leave.unPaidLeave = user.unpaidLeaves;
@@ -176,21 +206,34 @@ export const updateLeaveStatus = async (req, res) => {
         dates.push(date.format("YYYY-MM-DD"));
       }
 
+      const isHalfDay =
+        leave.leaveType === "firstHalf" || leave.leaveType === "secondHalf";
+
       await Promise.all(
         dates.map((date) =>
           AttendanceModel.updateOne(
-            { date, userId: leave.employee, status: "Leave" },
+            {
+              date,
+              userId: leave.employee,
+              status: isHalfDay
+                ? { $in: ["First Half Leave", "Second Half Leave"] }
+                : "Leave",
+            },
             { $set: { status: "" } }
           )
         )
       );
 
-      if (leave.leaveType === "casual" || leave.leaveType === "vacation") {
-        leave.leaveBalance += leave.leaveTaken;
+      const deduction = isHalfDay ? 0.5 : leave.leaveTaken;
+
+      if (["casual", "vacation"].includes(leave.leaveType)) {
+        leave.leaveBalance += deduction;
       } else if (leave.leaveType === "sick") {
-        user.sickLeaves = (user.sickLeaves || 0) - leave.leaveTaken;
-      } else if (leave.leaveType === "LOP" || leave.leaveType === "unpaid") {
-        user.unpaidLeaves = (user.unpaidLeaves || 0) - leave.leaveTaken;
+        user.sickLeaves = (user.sickLeaves || 0) - deduction;
+        leave.sickLeave = user.sickLeaves;
+      } else if (["LOP", "unpaid"].includes(leave.leaveType)) {
+        user.unpaidLeaves = (user.unpaidLeaves || 0) - deduction;
+        leave.unPaidLeave = user.unpaidLeaves;
       }
 
       leave.sickLeave = user.sickLeaves;
@@ -202,22 +245,21 @@ export const updateLeaveStatus = async (req, res) => {
     await leave.save();
 
     await sendNotification({
-      userId: leave.employee, 
-      title: `Your Leave Status Updated`, 
+      userId: leave.employee,
+      title: `Your Leave Status Updated`,
       message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
       link: `/leavestatus`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: req.user._id,
     });
     await sendNotification({
       forRoles: ["admin", "hr"],
-      title: `${loginUser.first_name} ${loginUser.last_name}'s Leave Status Updated`, 
+      title: `${loginUser.first_name} ${loginUser.last_name}'s Leave Status Updated`,
       message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
       link: `/leave`,
       type: "admin",
-      performedBy: req.user._id
+      performedBy: req.user._id,
     });
-
 
     res.status(200).json({
       success: true,
@@ -236,7 +278,6 @@ export const updateLeaveStatus = async (req, res) => {
     });
   }
 };
-
 
 export const getAllLeavesStatus = async (req, res) => {
   try {
@@ -311,7 +352,6 @@ export const getLeavesByUserId = async (req, res) => {
 
 export const getLoginUserAllLeaves = async (req, res) => {
   try {
-
     if (!req.user || !req.user?._id) {
       return res.status(400).json({
         success: false,
@@ -321,12 +361,14 @@ export const getLoginUserAllLeaves = async (req, res) => {
     }
     const userId = req.user._id;
     const totalLeavesAllowed = 14;
-    const leaves = await LeaveModel.find({ employee:userId}).lean();
+    const leaves = await LeaveModel.find({ employee: userId }).lean();
 
-       const usedLeaves = leaves.filter((leave) => leave.status === "approved").reduce((acc, leave) => acc + leave.leaveTaken, 0);
-       const leaveBalance = totalLeavesAllowed - usedLeaves;
+    const usedLeaves = leaves
+      .filter((leave) => leave.status === "approved")
+      .reduce((acc, leave) => acc + leave.leaveTaken, 0);
+    const leaveBalance = totalLeavesAllowed - usedLeaves;
 
-     const updatedLeaves = leaves.map((leave) => ({
+    const updatedLeaves = leaves.map((leave) => ({
       ...leave,
       leaveBalance,
     }));
@@ -334,12 +376,14 @@ export const getLoginUserAllLeaves = async (req, res) => {
     res.status(200).json({
       success: true,
       statusCode: 200,
-      message: leaves.length > 0 ? "Leaves fetched successfully." : "No leaves found for this user.",
+      message:
+        leaves.length > 0
+          ? "Leaves fetched successfully."
+          : "No leaves found for this user.",
       count: leaves.length,
       leaveBalance,
       data: updatedLeaves,
     });
-    
   } catch (error) {
     console.error("Error in getLoginUserAllLeaves:", error);
     res.status(500).json({
@@ -358,20 +402,33 @@ export const getAllUsersLeaveReport = async (req, res) => {
 
     const user = await userModel.findById(_id);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     if (!startDate || !endDate) {
-      return res.status(400).json({ success: false, message: 'Start date and end date are required' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Start date and end date are required",
+        });
     }
 
-    const formattedStart = moment.tz(startDate, user.timeZone).startOf('day').toDate();
-    const formattedEnd = moment.tz(endDate, user.timeZone).endOf('day').toDate();
+    const formattedStart = moment
+      .tz(startDate, user.timeZone)
+      .startOf("day")
+      .toDate();
+    const formattedEnd = moment
+      .tz(endDate, user.timeZone)
+      .endOf("day")
+      .toDate();
 
     const leaves = await LeaveModel.find({
       fromDate: { $lte: formattedEnd },
-      toDate: { $gte: formattedStart }
-    }).populate('userId');
+      toDate: { $gte: formattedStart },
+    }).populate("userId");
 
     const leaveMap = new Map();
 
@@ -394,7 +451,8 @@ export const getAllUsersLeaveReport = async (req, res) => {
         });
       }
 
-      const totalDays = moment(leave.toDate).diff(moment(leave.fromDate), 'days') + 1;
+      const totalDays =
+        moment(leave.toDate).diff(moment(leave.fromDate), "days") + 1;
 
       // Aggregate leave counts
       leaveMap.get(userKey).sickLeave += leave.sickLeave || 0;
@@ -407,28 +465,28 @@ export const getAllUsersLeaveReport = async (req, res) => {
         leaveType: leave.leaveType,
         status: leave.status,
         appliedAt: moment(leave.appliedAt).format("YYYY-MM-DD"),
-        totalDays
+        totalDays,
       });
     });
 
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Leave Report');
+    const sheet = workbook.addWorksheet("Leave Report");
 
     sheet.columns = [
       // { header: 'User ID', key: 'userId', width: 25 },
-      { header: 'Name', key: 'name', width: 30 },
-      { header: 'Email', key: 'email', width: 30 },
-      { header: 'Status', key: 'status', width: 15 },
-      { header: 'Leave Type', key: 'leaveType', width: 15 },
-      { header: 'Reason', key: 'reason', width: 30 },
-      { header: 'From Date', key: 'fromDate', width: 15 },
-      { header: 'To Date', key: 'toDate', width: 15 },
-      { header: 'Total Days', key: 'totalDays', width: 15 },
-      { header: 'Leave Status', key: 'leaveStatus', width: 15 },
-      { header: 'Applied At', key: 'appliedAt', width: 20 },
-      { header: 'Sick Leave Taken', key: 'sickLeave', width: 15 },
-      { header: 'Unpaid Leave Taken', key: 'unPaidLeave', width: 15 },
-      { header: 'Leave Balance', key: 'leaveBalance', width: 15 },
+      { header: "Name", key: "name", width: 30 },
+      { header: "Email", key: "email", width: 30 },
+      { header: "Status", key: "status", width: 15 },
+      { header: "Leave Type", key: "leaveType", width: 15 },
+      { header: "Reason", key: "reason", width: 30 },
+      { header: "From Date", key: "fromDate", width: 15 },
+      { header: "To Date", key: "toDate", width: 15 },
+      { header: "Total Days", key: "totalDays", width: 15 },
+      { header: "Leave Status", key: "leaveStatus", width: 15 },
+      { header: "Applied At", key: "appliedAt", width: 20 },
+      { header: "Sick Leave Taken", key: "sickLeave", width: 15 },
+      { header: "Unpaid Leave Taken", key: "unPaidLeave", width: 15 },
+      { header: "Leave Balance", key: "leaveBalance", width: 15 },
     ];
 
     for (const [, user] of leaveMap.entries()) {
@@ -453,21 +511,21 @@ export const getAllUsersLeaveReport = async (req, res) => {
     }
 
     res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
     res.setHeader(
-      'Content-Disposition',
+      "Content-Disposition",
       `attachment; filename=Leave_Report_${startDate}_to_${endDate}.xlsx`
     );
 
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
     res.status(500).json({
       success: false,
-      message: 'Something went wrong',
+      message: "Something went wrong",
       error: error.message,
     });
   }
