@@ -20,7 +20,7 @@ import notificationRouter from "./routes/notifyRoutes.js";
 import cookieParser from 'cookie-parser';
 
 
-app.use(cookieParser());
+
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,7 +31,7 @@ dotenv.config();
 const app = express();
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));;
-
+app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:5173",
   "https://hrms-frontend-git-dev-falcon-infotechs-projects.vercel.app",
