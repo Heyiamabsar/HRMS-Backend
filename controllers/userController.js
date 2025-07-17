@@ -317,12 +317,11 @@ export const getDashboard = async (req, res) => {
 };
 
 
-
 export const getAllDepartments = async (req, res) => {
   try {
-    console.log("test")
+    // console.log("test")
     const departments = await departmentModel.find()
-    console.log("department",departments)
+    // console.log("department",departments)
     res.status(200).json({
       success: true,
       statusCode: 200,

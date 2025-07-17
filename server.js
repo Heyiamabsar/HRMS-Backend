@@ -17,6 +17,11 @@ import { fileURLToPath } from 'url';
 import reportRouter from "./routes/reportsRoutes.js";
 import notificationRouter from "./routes/notifyRoutes.js";
 
+import cookieParser from 'cookie-parser';
+
+
+app.use(cookieParser());
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

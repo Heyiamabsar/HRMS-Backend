@@ -66,7 +66,7 @@ export const login = async (req, res) => {
         httpOnly: true,
         secure: true,              
         sameSite: 'Strict',        
-        maxAge: 15 * 24 * 60 * 60 * 1000,
+        maxAge: 30 * 24 * 60 * 60 * 1000,
       });
 
     res.json({
@@ -131,7 +131,7 @@ export const register = async (req, res) => {
 
 export const refreshToken =async (req, res) => {
   try {
-    const { token } = req.body;
+  const token = req.cookies.refreshToken;
 
     if (!token) {
       return res.status(400).json({ success: false, message: "Refresh token is required" });
@@ -160,7 +160,7 @@ export const refreshToken =async (req, res) => {
         httpOnly: true,
         secure: true,
         sameSite: 'Strict',
-        maxAge: 15 * 24 * 60 * 60 * 1000,
+        maxAge: 30 * 24 * 60 * 60 * 1000,
       });
 
       // const newAccessToken = generateAccessToken({ _id: user.id, role: user.role });
@@ -174,9 +174,9 @@ export const refreshToken =async (req, res) => {
 
 export const logout =async (req, res) => {
   try {
-  const { token } = req.body;
-
+    const token = req.cookies.refreshToken;
   await refreshModel.findOneAndDelete({ token });
+  res.clearCookie('refreshToken');
 
   res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
