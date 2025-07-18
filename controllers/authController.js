@@ -64,7 +64,7 @@ export const login = async (req, res) => {
 
         res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: true,              
+        secure: process.env.NODE_ENV === "production",              
         sameSite: 'None',        
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
@@ -159,7 +159,7 @@ console.log("Incoming refresh token:", token);
 
         res.cookie('refreshToken', newRefreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: 'None',
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
