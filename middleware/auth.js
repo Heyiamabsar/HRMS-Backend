@@ -19,7 +19,7 @@ export const authenticate = async(req, res, next) => {
     req.user = verified;
     next();
   } catch (err) {
-    res.status(400).json({
+    res.status(401).json({
       success: false,
       statusCode: 400,
       message: 'Invalid Token'
