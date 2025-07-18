@@ -66,7 +66,7 @@ export const login = async (req, res) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",              
         sameSite: 'None',        
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+        maxAge: 15 * 24 * 60 * 60 * 1000,
       }).json({
       success : true,  
       statusCode: 200,
@@ -169,7 +169,7 @@ console.log("Incoming refresh token:", token);
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: 'None',
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+        maxAge: 15 * 24 * 60 * 60 * 1000,
       });
 
       // const newAccessToken = generateAccessToken({ _id: user.id, role: user.role });
