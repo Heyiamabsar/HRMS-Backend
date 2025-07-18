@@ -437,7 +437,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
       "Attendance"
     );
 
-    console.log("attendanceRecords", attendanceRecords);
+    // console.log("attendanceRecords", attendanceRecords);
 
     res.status(200).json({
       success: true,

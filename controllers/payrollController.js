@@ -239,9 +239,9 @@ export const getPayrollsByMonthAndYear = async (req, res) => {
       month = currentDate.getMonth() + 1; 
       year = currentDate.getFullYear();
     }
-      console.log("month and year ",month, year)
+      // console.log("month and year ",month, year)
      const payrolls = await payrollModel.find({ month, year }).populate("userId", "first_name last_name department email role");
-      console.log("payrolls",payrolls)
+      // console.log("payrolls",payrolls)
     if (payrolls.length === 0) {
       return res.status(404).json({
         success: false,
@@ -460,7 +460,7 @@ let payDate = null;
         });
       }
     }
-    console.log("results",results)
+    // console.log("results",results)
 
     res.status(200).json({
       success: true,

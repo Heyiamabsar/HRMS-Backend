@@ -71,7 +71,7 @@ export const getAllUploads = async (req, res) => {
 
 export const getUploadById = async (req, res) => {
   const { id } = req.params;
-console.log("Get Upload ID:", id);
+// console.log("Get Upload ID:", id);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ success: false, statusCode: 400, error: 'Invalid ID format' });

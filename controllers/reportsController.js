@@ -398,7 +398,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
 
 
     allUsers.forEach(user => {
-      console.log("user",user)
+      // console.log("user",user)
       const id = user?._id?.toString();
       const p = payrollMap[id];
       const lv = leaveMap[id] || {};
@@ -438,7 +438,7 @@ export const getAllUsersPayrollReport = async (req, res) => {
         payDate: p?.payDate ? moment(p.payDate).format("YYYY-MM-DD") : ''
       });
     });
-    console.log("payrollMap",payrollMap)
+    // console.log("payrollMap",payrollMap)
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename=Payroll_Report_${startDate}_to_${endDate}.xlsx`);

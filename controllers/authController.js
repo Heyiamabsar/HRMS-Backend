@@ -68,6 +68,7 @@ export const login = async (req, res) => {
         sameSite: 'None',        
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
+      console.log("refreshToken at login",refreshToken)
 
     res.json({
       success : true,  
