@@ -19,11 +19,15 @@ export const authenticate = async(req, res, next) => {
     req.user = verified;
     next();
   } catch (err) {
-    res.status(401).json({
+    if (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ message: 'TokenExpired' }); 
+      }
+      return res.status(403).json({      
       success: false,
-      statusCode: 400,
-      message: 'Invalid Token'
-    });
+      statusCode: 403,
+      message: 'InvalidToken' });
+    }
   }
 };
 
