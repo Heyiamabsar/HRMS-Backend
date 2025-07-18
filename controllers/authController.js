@@ -132,7 +132,7 @@ export const register = async (req, res) => {
 export const refreshToken =async (req, res) => {
   try {
   const token = req.cookies.refreshToken;
-
+console.log("Incoming refresh token:", token);
     if (!token) {
       return res.status(400).json({ success: false, message: "Refresh token is required" });
     }
