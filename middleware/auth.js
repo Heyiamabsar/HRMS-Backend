@@ -20,6 +20,7 @@ export const authenticate = async(req, res, next) => {
     next();
   } catch (err) {
     if (err) {
+      console.log("error in authenticate ",err)
       if (err.name === 'TokenExpiredError') {
         return res.status(401).json({ message: 'TokenExpired' }); 
       }
@@ -35,8 +36,8 @@ export const authorizeRoles = (...roles) => {
 
   return async (req, res, next) => {
     try {
-       console.log("!req?.user",!req?.user)
-       console.log("!req?.user?._id",!req?.user?._id)
+      //  console.log("!req?.user",!req?.user)
+      //  console.log("!req?.user?._id",!req?.user?._id)
        
       if (!req?.user || !req?.user?._id) {
         return res.status(401).json({
