@@ -29,9 +29,7 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 const app = express();
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }));;
-app.use(cookieParser());
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://hrms-frontend-git-dev-falcon-infotechs-projects.vercel.app",
@@ -43,16 +41,22 @@ app.use(cors({
 
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
+       return callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+    return  callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true
 }));
-app.options('*', cors()); 
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }));;
+app.use(cookieParser());
 
 app.use('/downloads', express.static(path.join(__dirname, 'public/downloads')));
 app.use("/api/auth", authRoutes);
