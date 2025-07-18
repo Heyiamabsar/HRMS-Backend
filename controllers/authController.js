@@ -67,10 +67,7 @@ export const login = async (req, res) => {
         secure: process.env.NODE_ENV === "production",              
         sameSite: 'None',        
         maxAge: 30 * 24 * 60 * 60 * 1000,
-      });
-      console.log("refreshToken at login",refreshToken)
-
-    res.json({
+      }).json({
       success : true,  
       statusCode: 200,
       message: 'Login successful',
@@ -78,7 +75,18 @@ export const login = async (req, res) => {
       // refreshToken,
       //  token,
        user,
-       });
+      });
+      console.log("refreshToken at login",refreshToken)
+
+    // res.json({
+    //   success : true,  
+    //   statusCode: 200,
+    //   message: 'Login successful',
+    //   accessToken,
+    //   // refreshToken,
+    //   //  token,
+    //    user,
+    //    });
   } catch (err) {
     res.status(400).json({success : false,  statusCode: 400, error: err.message });
   }
