@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 dotenv.config();
 
 export const authenticate = async(req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies.token ;
+  const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies.refreshToken ;
   // console.log("token",token)
   if (!token) return res.status(401).json({
     success: false,
