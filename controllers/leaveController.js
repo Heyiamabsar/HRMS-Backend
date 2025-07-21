@@ -13,11 +13,42 @@ export const applyLeave = async (req, res) => {
     const userId = req.user?._id;
     const user = await userModel.findById(userId);
 
+    const existingLeaves = await LeaveModel.find({
+      employee: userId,
+      status: "approved",
+      leaveType: { $in: ["casual", "vacation", "firstHalf", "secondHalf"] },
+    });
+
+      let leaveBalance = 14 - existingLeaves.length;
+      const sickLeaveCount = await LeaveModel.countDocuments({
+        employee: userId,
+        status: "approved",
+        leaveType: "sick",
+      });
+
+      const unpaidLeaveCount = await LeaveModel.countDocuments({
+        employee: userId,
+        status: "approved",
+        leaveType: "unpaid",
+      });
+
     const leaveDays =
       Math.ceil(
         (new Date(toDate) - new Date(fromDate)) / (1000 * 60 * 60 * 24)
       ) + 1;
 
+
+        const isCasualOrVacation = ["casual", "vacation"].includes(leaveType);
+        const isHalfDay = ["firstHalf", "secondHalf"].includes(leaveType);
+        const deduction = isHalfDay ? 0.5 : leaveDays;
+
+        if ((isCasualOrVacation || isHalfDay) && leaveBalance < deduction) {
+          return res.status(400).json({
+            success: false,
+            statusCode: 400,
+            message: "Insufficient leave balance",
+          });
+        }
     const overlappingLeave = await LeaveModel.findOne({
       userId,
       status: "approved",
@@ -43,26 +74,31 @@ export const applyLeave = async (req, res) => {
       fromDate,
       toDate,
       reason,
+      sickLeave :sickLeaveCount,
+      unPaidLeave :unpaidLeaveCount,
+      leaveBalance,
       leaveTaken: leaveDays,
       maximumLeave: 14,
       status: "pending",
     });
 
-    await sendNotification({
-      forRoles: ["admin", "hr"],
-      title: "New Leave Request",
-      message: `${user.first_name} ${user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
-      link: `/leave`,
-      type: "user",
-      performedBy: user._id,
-    });
-    await sendNotification({
-      userId: user._id,
-      title: "Leave Request Submitted",
-      message: `Your leave request from ${leave.fromDate} to ${leave.toDate} has been submitted.`,
-      link: `/leavestatus`,
-      type: "user",
-    });
+
+    // await sendNotification({
+    //   forRoles: ["admin", "hr"],
+    //   title: "New Leave Request",
+    //   message: `${user.first_name} ${user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
+    //   link: `/leave`,
+    //   type: "user",
+    //   performedBy: user._id,
+    // });
+    // await sendNotification({
+    //   userId: user._id,
+    //   title: "Leave Request Submitted",
+    //   message: `Your leave request from ${leave.fromDate} to ${leave.toDate} has been submitted.`,
+    //   link: `/leavestatus`,
+    //   type: "user",
+    // });
+
 
     res.status(201).json({
       success: true,
@@ -113,25 +149,43 @@ export const updateLeaveStatus = async (req, res) => {
       });
     }
 
-    // APPROVE CASE
-    if (status === "approved" && leave.status !== "approved") {
-      const existingLeaves = await LeaveModel.find({
-        employee: leave.employee,
-        status: "approved",
-      });
+    const existingLeaves = await LeaveModel.find({
+      employee: leave.employee,
+      status: "approved",
+      leaveType: { $in: ["casual", "vacation"] },
+    });
 
       const totalLeaveTaken = existingLeaves.reduce(
         (acc, l) => acc + l.leaveTaken,
         0
       );
-      const leaveBalance = 14 - totalLeaveTaken;
 
-      if (leaveBalance < leave.leaveTaken) {
-        return res.status(400).json({
-          success: false,
-          statusCode: 400,
-          message: "Insufficient leave balance",
-        });
+      let leaveBalance = 14 - totalLeaveTaken;
+
+      if (
+        ["casual", "vacation", "firstHalf", "secondHalf"].includes(leave.leaveType)
+      ) {
+          const isHalfDay = ["firstHalf", "secondHalf"].includes(leave.leaveType);
+          const deduction = isHalfDay ? 0.5 : leave.leaveTaken;
+
+        if ((["casual", "vacation"].includes(leave.leaveType) || isHalfDay) && leaveBalance < deduction) {
+          return res.status(400).json({
+            success: false,
+            statusCode: 400,
+            message: "Insufficient leave balance for this leave type",
+          });
+        }
+
+        if (["casual", "vacation"].includes(leave.leaveType)) {
+          leave.leaveBalance = leaveBalance - deduction;
+        }
+      }
+
+    // APPROVE CASE
+    if (status === "approved" && leave.status !== "approved") {
+
+      if (["casual", "vacation"].includes(leave.leaveType)) {
+        leave.leaveBalance = leaveBalance - leave.leaveTaken;
       }
 
       const dates = [];
@@ -197,6 +251,8 @@ export const updateLeaveStatus = async (req, res) => {
 
     // CANCEL CASE
     if (leave.status === "approved" && status === "cancelled") {
+
+
       const dates = [];
       for (
         let date = moment(fromDate);
@@ -240,26 +296,28 @@ export const updateLeaveStatus = async (req, res) => {
       leave.unPaidLeave = user.unpaidLeaves;
     }
 
+
     leave.status = status;
     await user.save();
     await leave.save();
 
-    await sendNotification({
-      userId: leave.employee,
-      title: `Your Leave Status Updated`,
-      message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
-      link: `/leavestatus`,
-      type: "admin",
-      performedBy: req.user._id,
-    });
-    await sendNotification({
-      forRoles: ["admin", "hr"],
-      title: `${loginUser.first_name} ${loginUser.last_name}'s Leave Status Updated`,
-      message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
-      link: `/leave`,
-      type: "admin",
-      performedBy: req.user._id,
-    });
+    // await sendNotification({
+    //   userId: leave.employee,
+    //   title: `Your Leave Status Updated`,
+    //   message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
+    //   link: `/leavestatus`,
+    //   type: "admin",
+    //   performedBy: req.user._id,
+    // });
+    // await sendNotification({
+    //   forRoles: ["admin", "hr"],
+    //   title: `${loginUser.first_name} ${loginUser.last_name}'s Leave Status Updated`,
+    //   message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
+    //   link: `/leave`,
+    //   type: "admin",
+    //   performedBy: req.user._id,
+    // });
+
 
     res.status(200).json({
       success: true,
@@ -394,6 +452,7 @@ export const getLoginUserAllLeaves = async (req, res) => {
     });
   }
 };
+
 
 export const getAllUsersLeaveReport = async (req, res) => {
   try {

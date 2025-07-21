@@ -141,13 +141,13 @@ export const register = async (req, res) => {
 export const refreshToken =async (req, res) => {
   try {
   const token = req.cookies.refreshToken;
-console.log("Incoming refresh token:", token);
+
     if (!token) {
       return res.status(400).json({ success: false, message: "Refresh token is required" });
     }
 
-  const existingToken = await refreshModel.findOne({ token });
-  if (!existingToken) return res.status(403).json({ message: "Refresh token is invalid or already used" });
+    const existingToken = await refreshModel.findOne({ token });
+    if (!existingToken) return res.status(403).json({ message: "Refresh token is invalid or already used" });
 
     jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async  (err, decoded) => {
       if (err) {
@@ -161,19 +161,9 @@ console.log("Incoming refresh token:", token);
         return res.status(404).json({ success: false, message: "User not found" });
       }
       const newAccessToken = generateAccessToken(user);
-      const newRefreshToken = generateRefreshToken(user);
-
-      await refreshModel.findOneAndReplace({ token }, { userId: userId, token: newRefreshToken });
-
-        res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: 'None',
-        maxAge: 15 * 24 * 60 * 60 * 1000,
-      });
 
       // const newAccessToken = generateAccessToken({ _id: user.id, role: user.role });
-      return res.status(200).json({ success: true, accessToken: newAccessToken, refreshToken: newRefreshToken, });
+      return res.status(200).json({ success: true, accessToken: newAccessToken });
     });
   } catch (error) {
     console.error("Error in refreshToken:", error.message);
