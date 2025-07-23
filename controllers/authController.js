@@ -12,25 +12,6 @@ dotenv.config();
 
 
 
-const generateAccessToken = (user) => {
-  return jwt.sign(
-    { _id: user._id, role: user.role },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
-  );
-};
-
-const generateRefreshToken = (user) => {
-  const refreshToken = jwt.sign(
-    { _id: user._id, role: user.role },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
-  );
-
-  return refreshToken;
-};
-
-
 
 export const login = async (req, res) => {
   try {
@@ -76,7 +57,7 @@ export const login = async (req, res) => {
       //  token,
        user,
       });
-      console.log("refreshToken at login",refreshToken)
+      // console.log("refreshToken at login",refreshToken)
 
     // res.json({
     //   success : true,  
@@ -92,6 +73,23 @@ export const login = async (req, res) => {
   }
 };
 
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    { _id: user._id, role: user.role },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
+  );
+};
+
+const generateRefreshToken = (user) => {
+  const refreshToken = jwt.sign(
+    { _id: user._id, role: user.role },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+  );
+
+  return refreshToken;
+};
 
 export const register = async (req, res) => {
   try {
@@ -141,7 +139,7 @@ export const register = async (req, res) => {
 export const refreshToken =async (req, res) => {
   try {
   const token = req.cookies.refreshToken;
-
+  // console.log("token from cookies",token)
     if (!token) {
       return res.status(400).json({ success: false, message: "Refresh token is required" });
     }
@@ -161,6 +159,20 @@ export const refreshToken =async (req, res) => {
         return res.status(404).json({ success: false, message: "User not found" });
       }
       const newAccessToken = generateAccessToken(user);
+      const newRefreshToken = generateRefreshToken(user);
+      await refreshModel.findOneAndReplace({ token }, { userId: user._id, token: newRefreshToken });
+          res.cookie('refreshToken', newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: 'None',
+            maxAge: 15 * 24 * 60 * 60 * 1000,
+          });
+
+      return res.status(200).json({ 
+        success: true, 
+        accessToken: newAccessToken ,
+        // refreshToken: newRefreshToken,
+      });
 
       // const newAccessToken = generateAccessToken({ _id: user.id, role: user.role });
       return res.status(200).json({ success: true, accessToken: newAccessToken });

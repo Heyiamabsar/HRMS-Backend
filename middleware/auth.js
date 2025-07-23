@@ -5,8 +5,9 @@ import bcrypt from 'bcrypt';
 dotenv.config();
 
 export const authenticate = async(req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies.refreshToken ;
-  // console.log("token",token)
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  // const token = req.header('Authorization')?.replace('Bearer ', '') || req.cookies.refreshToken ;
+  // console.log("Assess token from frontend",token)
   if (!token) return res.status(401).json({
     success: false,
     statusCode: 401,
@@ -15,6 +16,7 @@ export const authenticate = async(req, res, next) => {
 
   try {
     const verified = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    // console.log("verified",verified)
     // const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = verified;
     next();

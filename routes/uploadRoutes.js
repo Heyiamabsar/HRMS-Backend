@@ -10,7 +10,7 @@ const uploadRouter = express.Router();
 const upload = multer({ storage });
 
 uploadRouter.use(authenticate);
-uploadRouter.post('/upload', authorizeRoles('admin', 'hr', 'employee'), upload.array('files', 10), handleFileUpload);
+uploadRouter.post('/', authorizeRoles('admin', 'hr', 'employee'), upload.array('files', 10), handleFileUpload);
 uploadRouter.put('/update_upload/:id', authorizeRoles('admin', 'hr', 'employee'),upload.array("files"), updateUploadById);
 uploadRouter.delete('/uploads/:id', authorizeRoles('admin', 'hr', 'employee'), deleteUpload);
 uploadRouter.get('/uploadByUserId/:id', authorizeRoles('admin', 'hr', 'employee'), getUserUploads);

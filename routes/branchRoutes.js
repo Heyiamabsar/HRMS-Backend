@@ -1,0 +1,15 @@
+
+
+import express from "express";
+import { authenticate, authorizeRoles } from "../middleware/auth.js";
+import { createBranch, getAllBranches, getBranchById } from "../controllers/branchController.js";
+
+const branchRouter = express.Router()
+branchRouter.use(authenticate);
+
+branchRouter.get("/", authorizeRoles('admin','hr') , getAllBranches)
+branchRouter.get("/:id", authorizeRoles('admin','hr') , getBranchById)
+branchRouter.post("/create", authorizeRoles('admin','hr') , createBranch)
+
+
+export default branchRouter;

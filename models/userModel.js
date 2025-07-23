@@ -82,6 +82,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Designation is required"],
     },
+    branch: {
+      type: String,
+      required: [false, "Branch is required"],
+    },
     joining_date: {
       type: Date,
       required: [true, "Joining date is required"],

@@ -18,6 +18,9 @@ import reportRouter from "./routes/reportsRoutes.js";
 import notificationRouter from "./routes/notifyRoutes.js";
 
 import cookieParser from 'cookie-parser';
+import departmentRouter from "./routes/departmentRouts.js";
+import designationRouter from "./routes/designationRoutes.js";
+import branchRouter from "./routes/branchRoutes.js";
 
 
 
@@ -58,12 +61,16 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }));;
 app.use(cookieParser());
 
+
 app.use('/downloads', express.static(path.join(__dirname, 'public/downloads')));
 app.use("/api/auth", authRoutes);
+app.use("/api/branch", branchRouter);
 app.use("/api/employee", employeeRouter);
 app.use("/api/payroll", payrollRouter);
 app.use("/api/hr", hrRouter);
-app.use('/api', uploadRouter);
+app.use('/api/upload', uploadRouter);
+app.use('/api/department', departmentRouter);
+app.use('/api/designation', designationRouter);
 app.use('/api/attendance', attendanceRouter);
 app.use('/api/leaves', leaveRouter);
 app.use('/api/report', reportRouter);
