@@ -19,7 +19,7 @@ export const getAllDepartments = async (req, res) => {
       success: true,
       statusCode: 200,
       data: departments,
-      // result
+      result
     });
   } catch (error) {
     res.status(500).json({

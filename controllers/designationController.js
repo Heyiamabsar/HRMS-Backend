@@ -11,7 +11,7 @@ export const getAllDesignations = async (req, res) => {
         return {
           ...design.toObject(),
           associatedUsersCount: users.length,
-          associatedUsersList: users
+          // associatedUsersList: users
         };
       })
     );
@@ -20,7 +20,7 @@ export const getAllDesignations = async (req, res) => {
       success: true,
       statusCode: 200,
       data: designations,
-      // result
+      result
     });
   } catch (error) {
     res.status(500).json({
