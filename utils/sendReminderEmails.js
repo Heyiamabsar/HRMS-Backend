@@ -27,7 +27,7 @@ const sendReminderEmails = async (user) => {
       const mailOptions = {
         from: process.env.ADMIN_EMAIL,
         to: user.email,
-        subject: "Reminder: Missing Check-In",
+        subject: "Reminder: Missing Attendance check-in",
         text: `Hi ${user?.first_name} ${user?.last_name},\n\nWe noticed you haven't checked in yet today.\nPlease remember to punch-in as soon as possible.\n\nThanks!`,
       };
       const info = await transporter.sendMail(mailOptions);
