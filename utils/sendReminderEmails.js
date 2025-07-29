@@ -14,21 +14,32 @@ const sendReminderEmails = async (user) => {
   try {
     console.log(user?.email);
     const currentDate = new Date().toISOString().split("T")[0];
-    console.log(
-      `📨 Processing reminder for: ${user?.email} | Date: ${currentDate}`
-    );
+    const currentTime = new Date();
 
     const attendance = await AttendanceModel.findOne({
       user: user._id,
       date: currentDate,
     });
 
-    if (!attendance) {
+    if (!attendance || !attendance.checkInTime) {
+      const nineAM = new Date();
+      nineAM.setHours(9, 0, 0, 0);
+
+      const isBefore9 = currentTime < nineAM;
+
+      const subject = isBefore9
+        ? "Reminder: Do not forget to do your check-in"
+        : "Reminder: You have not checked-in!";
+
+      const text = isBefore9
+        ? `Hi ${user?.first_name} ${user?.last_name},\n\nReminder for check-in\n\nYour shift begins at 09:00 AM. Please ensure that your attendance is marked.\n\nThanks!`
+        : `Hi ${user?.first_name} ${user?.last_name},\n\nReminder for check-in\n\nYour shift has already begun. Have you marked your attendance?\n\nThanks!`;
+
       const mailOptions = {
         from: process.env.ADMIN_EMAIL,
         to: user.email,
-        subject: "Reminder: Missing Attendance check-in",
-        text: `Hi ${user?.first_name} ${user?.last_name},\n\nWe noticed you haven't checked in yet today.\nPlease remember to punch-in as soon as possible.\n\nThanks!`,
+        subject,
+        text,
       };
       const info = await transporter.sendMail(mailOptions);
 
