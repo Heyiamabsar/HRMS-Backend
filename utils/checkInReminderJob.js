@@ -20,18 +20,34 @@ export const startCheckInReminderJob = async () => {
   const sendReminders = async () => {
     console.log(`🕐 Running check-in reminder job...`);
 
+    const users = await userModel.find({ role: { $in: ["employee", "hr"] } });
+
     for (const [index, user] of users.entries()) {
       const userId = user._id.toString();
 
       if (!reminderCounts[userId]) reminderCounts[userId] = 0;
 
-      if (testMode || reminderCounts[userId] < 5) {
+      if (testMode || reminderCounts[userId] < 4) {
         setTimeout(async () => {
-          console.log(
-            `[${testMode ? "TEST" : "PROD"}] Sending reminder to: ${user.email}`
-          );
+          // console.log(
+          //   `[${testMode ? "TEST" : "PROD"}] Sending reminder to: ${user.email}`
+          // );
+          
+        const currentDate = new Date().toISOString().split("T")[0];
+         const attendance = await AttendanceModel.findOne({
+          user: user._id,
+          date: currentDate,
+        });
+
+          if (!attendance || !attendance.checkInTime) {
+          console.log(`[${testMode ? "TEST" : "PROD"}] Sending reminder to: ${user.email}`);
           await sendReminderEmails(user);
           if (!testMode) reminderCounts[userId]++;
+        } else {
+          console.log(`⏸️ No email sent. ${user.email} already checked in.`);
+        }
+          // await sendReminderEmails(user);
+          // if (!testMode) reminderCounts[userId]++;
         }, index * 5000);
       }
     }
@@ -44,12 +60,12 @@ export const startCheckInReminderJob = async () => {
     });
   } else {
     // 8:30, 8:40, 8:50
-    cron.schedule("30,40,50 8 * * *", sendReminders, {
+    cron.schedule("45,55 8 * * *", sendReminders, {
       timezone: "Asia/Kolkata",
     });
 
     // 9:00, 9:10, 9:20
-    cron.schedule("0,10,20 9 * * *", sendReminders, {
+    cron.schedule("10,20 9 * * *", sendReminders, {
       timezone: "Asia/Kolkata",
     });
   }

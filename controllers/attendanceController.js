@@ -22,15 +22,12 @@ export const markInTime = async (req, res) => {
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
     const existing = await AttendanceModel.findOne({ userId, date });
 
-
     if (!latitude || !longitude) {
       return res.status(400).json({
         success: false,
         message: "Location coordinates (latitude and longitude) are required.",
       });
     }
-
-
 
     if (existing && existing.inTime) {
       return res.status(400).json({
@@ -39,8 +36,6 @@ export const markInTime = async (req, res) => {
         message: "Already punched in today",
       });
     }
-
-    
 
     const response = await axios.get(
       `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
@@ -53,15 +48,15 @@ export const markInTime = async (req, res) => {
     let address = response?.data?.address;
     const displayName = response?.data?.display_name;
     const userAgent = req.headers["user-agent"] || "";
-      let punchedFrom = "Unknown";
+    let punchedFrom = "Unknown";
 
-      if (/mobile/i.test(userAgent)) {
-        punchedFrom = "Mobile";
-      } else if (/PostmanRuntime/i.test(userAgent)) {
-        punchedFrom = "Postman";
-      } else {
-        punchedFrom = "Web";
-      }
+    if (/mobile/i.test(userAgent)) {
+      punchedFrom = "Mobile";
+    } else if (/PostmanRuntime/i.test(userAgent)) {
+      punchedFrom = "Postman";
+    } else {
+      punchedFrom = "Web";
+    }
 
     let todayStatus;
     const inTime = moment().tz(userTimeZone).toDate();
@@ -93,27 +88,25 @@ export const markInTime = async (req, res) => {
         $set: {
           inTime,
           status: todayStatus,
-          'location.checkIn': {
+          "location.checkIn": {
             latitude,
             longitude,
             address,
             displayName,
             punchedFrom,
-
           },
         },
       },
       { upsert: true, new: true }
     );
-     await attendanceStatus.save();
-     
+    await attendanceStatus.save();
 
     res.status(200).json({
       success: true,
       statusCode: 200,
       message: "Punched IN successfully",
-      attendance:attendanceStatus,
-      punchedFrom
+      attendance: attendanceStatus,
+      punchedFrom,
     });
   } catch (err) {
     res
@@ -130,7 +123,7 @@ export const markOutTime = async (req, res) => {
     const latitude = location?.latitude;
     const longitude = location?.longitude;
 
-     const user = await userModel.findById(userId);
+    const user = await userModel.findById(userId);
 
     if (!latitude || !longitude) {
       return res.status(400).json({
@@ -175,11 +168,11 @@ export const markOutTime = async (req, res) => {
     attendance.duration = duration;
     await attendance.save();
 
-        const response = await axios.get(
+    const response = await axios.get(
       `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
       {
         headers: {
-          'User-Agent': process.env.NOMINATION_USER_AGENT,
+          "User-Agent": process.env.NOMINATION_USER_AGENT,
         },
       }
     );
@@ -187,15 +180,15 @@ export const markOutTime = async (req, res) => {
     const address = response?.data?.address;
     const displayName = response?.data?.display_name;
     const userAgent = req.headers["user-agent"] || "";
-      let punchedFrom = "Unknown";
+    let punchedFrom = "Unknown";
 
-      if (/mobile/i.test(userAgent)) {
-        punchedFrom = "Mobile";
-      } else if (/PostmanRuntime/i.test(userAgent)) {
-        punchedFrom = "Postman";
-      } else {
-        punchedFrom = "Web";
-      }
+    if (/mobile/i.test(userAgent)) {
+      punchedFrom = "Mobile";
+    } else if (/PostmanRuntime/i.test(userAgent)) {
+      punchedFrom = "Postman";
+    } else {
+      punchedFrom = "Web";
+    }
 
     let todayStatus;
     if (inTime.isSameOrBefore(nineFifteen)) {
@@ -248,13 +241,12 @@ export const markOutTime = async (req, res) => {
       {
         $set: {
           status: todayStatus,
-          'location.checkOut':{
+          "location.checkOut": {
             latitude,
             longitude,
             address,
             displayName,
             punchedFrom,
-            
           },
         },
       },
@@ -267,8 +259,8 @@ export const markOutTime = async (req, res) => {
       success: true,
       statusCode: 200,
       message: "Punched OUT successfully",
-      attendance:attendanceStatus,
-      punchedFrom
+      attendance: attendanceStatus,
+      punchedFrom,
     });
   } catch (err) {
     res
@@ -282,6 +274,7 @@ export const getTodayAttendance = async (req, res) => {
   try {
     const userId = req.user._id;
     const date = moment().format("YYYY-MM-DD");
+    const isSunday = moment(date).day() === 0;
 
     const holiday = await holidayModel.findOne({ date, isOptional: false });
     let attendance = await AttendanceModel.findOne({ date, userId });
@@ -295,7 +288,7 @@ export const getTodayAttendance = async (req, res) => {
           outTime: null,
           status: "Holiday",
         });
-        await attendance.save();
+
       }
       return res.status(200).json({
         success: true,
@@ -319,15 +312,15 @@ export const getTodayAttendance = async (req, res) => {
         date,
         inTime: null,
         outTime: null,
-        status: "Absent",
+        status: isSunday ? "Weekend" : "Absent",
       });
     } else if (
       !attendance.inTime &&
       !attendance.outTime &&
-      attendance.status !== "Absent"
+      (attendance.status === "Absent" || !attendance.status)
     ) {
-      // ❌ No in/out time? Update status to Absent in DB
-      attendance.status = "Absent";
+
+      attendance.status = isSunday ? "Weekend" : "Absent";
       await attendance.save();
     }
 
@@ -336,7 +329,7 @@ export const getTodayAttendance = async (req, res) => {
       "userId",
       "first_name last_name email status userId department designation salary role"
     );
-
+    await attendance.save();
     // ✅ Return final response
     res.status(200).json({
       success: true,
@@ -345,7 +338,7 @@ export const getTodayAttendance = async (req, res) => {
       date,
       attendance,
     });
-    await attendance.save();
+
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -371,7 +364,16 @@ export const getAllUsersTodayAttendance = async (req, res) => {
     const result = await Promise.all(
       attendances.map(async (attendance) => {
         const user = await userModel.findById(attendance.User);
+        const isSunday = moment(attendance.date).day() === 0;
 
+        if (
+          !attendance.inTime &&
+          !attendance.outTime &&
+          (attendance.status === "Absent" || !attendance.status)
+        ) {
+          attendance.status = isSunday ? "Weekend" : "Absent";
+          await attendance.save();
+        }
         return {
           user: attendance.userId
             ? {
@@ -431,13 +433,23 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
       "userId",
       "first_name last_name email status userId joining_date  department designation salary role"
     );
+    for (let attendance of attendanceRecords) {
+      const isSunday = moment(attendance.date).day() === 0;
+
+      if (
+        !attendance.inTime &&
+        !attendance.outTime &&
+        (attendance.status === "Absent" || !attendance.status)
+      ) {
+        attendance.status = isSunday ? "Weekend" : "Absent";
+        await attendance.save();
+      }
+    }
 
     // 2. Fetch Leave Records
     const leaveRecords = await LeaveModel.find({ userId }).populate(
       "Attendance"
     );
-
-    // console.log("attendanceRecords", attendanceRecords);
 
     res.status(200).json({
       success: true,
@@ -458,28 +470,101 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 };
 
 // Get all users' full attendance history
+// export const getAllUsersFullAttendanceHistory = async (req, res) => {
+//   try {
+//     const records = await AttendanceModel.find().populate(
+//       "userId",
+//       "first_name last_name email phone joining_date department designation salary role userId"
+//     );;
+//     const users = await userModel.find({});
+
+//     const attendanceByUser = {};
+
+//     records.forEach((recordDoc) => {
+//       const isSunday = moment(recordDoc.date).day() === 0;
+//       if (
+//         !recordDoc.inTime &&
+//         !recordDoc.outTime &&
+//         (recordDoc.status === "Absent" || !recordDoc.status)
+//       ) {
+//         recordDoc.status = isSunday ? "Weekend" : "Absent";
+//         recordDoc.save(); // No need to await inside forEach
+//       }
+//       if (!recordDoc.userId) return;
+
+//       const user = users.find(
+//         (u) => u._id?.toString() === recordDoc.userId?.toString()
+//       );
+//       if (!user) return;
+
+//       const record = recordDoc.toObject();
+//       const userIdStr = user._id.toString();
+
+//       if (!attendanceByUser[userIdStr]) {
+//         attendanceByUser[userIdStr] = {
+//           userId: userIdStr,
+//           empId: user?.userId,
+//           userName: `${user.first_name} ${user.last_name}`,
+//           userEmail: user.email,
+//           userPhone: user.phone,
+//           joining_date: user.joining_date,
+//           department: user.department,
+//           designation: user.designation,
+//           salary: user.salary,
+//           role: user.role,
+//           attendanceHistory: [],
+//         };
+//       }
+
+//       attendanceByUser[userIdStr].attendanceHistory.push(record);
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       statusCode: 200,
+//       message: "All users' attendance history fetched successfully",
+//       data: Object.values(attendanceByUser), // Convert to array if needed
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       statusCode: 500,
+//       message: "Error fetching full attendance history",
+//       error: error.message,
+//     });
+//   }
+// };
+
 export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
-    const records = await AttendanceModel.find();
-    const users = await userModel.find({});
+    const records = await AttendanceModel.find().populate(
+      "userId",
+      "first_name last_name email phone joining_date department designation salary role userId"
+    );
 
     const attendanceByUser = {};
 
-    records.forEach((recordDoc) => {
-      if (!recordDoc.userId) return;
+    for (const record of records) {
+      const isSunday = moment(record.date).day() === 0;
 
-      const user = users.find(
-        (u) => u._id?.toString() === recordDoc.userId?.toString()
-      );
-      if (!user) return;
+      if (
+        !record.inTime &&
+        !record.outTime &&
+        (record.status === "Absent" || !record.status)
+      ) {
+        record.status = isSunday ? "Weekend" : "Absent";
+        await record.save();
+      }
 
-      const record = recordDoc.toObject();
+      const user = record.userId;
+      if (!user || !user._id) continue;
+
       const userIdStr = user._id.toString();
 
       if (!attendanceByUser[userIdStr]) {
         attendanceByUser[userIdStr] = {
           userId: userIdStr,
-          empId: user?.userId,
+          empId: user.userId,
           userName: `${user.first_name} ${user.last_name}`,
           userEmail: user.email,
           userPhone: user.phone,
@@ -492,19 +577,18 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
         };
       }
 
-      attendanceByUser[userIdStr].attendanceHistory.push(record);
-    });
+      attendanceByUser[userIdStr].attendanceHistory.push(record.toObject());
+    }
 
     res.status(200).json({
       success: true,
       statusCode: 200,
       message: "All users' attendance history fetched successfully",
-      data: Object.values(attendanceByUser), // Convert to array if needed
+      data: Object.values(attendanceByUser),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      statusCode: 500,
       message: "Error fetching full attendance history",
       error: error.message,
     });
