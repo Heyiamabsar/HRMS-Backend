@@ -11,7 +11,23 @@ import refreshModel from '../models/refreshTokenModel.js';
 dotenv.config();
 
 
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    { _id: user._id, role: user.role },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
+  );
+};
 
+const generateRefreshToken = (user) => {
+  const refreshToken = jwt.sign(
+    { _id: user._id, role: user.role },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+  );
+
+  return refreshToken;
+};
 
 export const login = async (req, res) => {
   try {
@@ -73,22 +89,54 @@ export const login = async (req, res) => {
   }
 };
 
-const generateAccessToken = (user) => {
-  return jwt.sign(
-    { _id: user._id, role: user.role },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
-  );
-};
+export const refreshToken =async (req, res) => {
+  try {
+  const token = req.cookies.refreshToken;
+  // console.log("token from cookies",token)
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Refresh token is required" });
+    }
 
-const generateRefreshToken = (user) => {
-  const refreshToken = jwt.sign(
-    { _id: user._id, role: user.role },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
-  );
+    const existingToken = await refreshModel.findOne({ token });
+    if (!existingToken) return res.status(403).json({ message: "Refresh token is invalid or already used" });
 
-  return refreshToken;
+    jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async  (err, decoded) => {
+      if (err) {
+        console.error("Token verification failed:", err.message);
+        return res.status(403).json({ success: false, message: "Refresh token expired or invalid" });
+      }
+
+      const userId = decoded._id;
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+      const newAccessToken = generateAccessToken(user);
+      const newRefreshToken = generateRefreshToken(user);
+      const updated = await refreshModel.findOneAndUpdate({ token }, { userId: user._id, token: newRefreshToken });
+      console.log('Updated refresh token record:', updated);
+          res.cookie('refreshToken', newRefreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: 'None',
+            maxAge: 15 * 24 * 60 * 60 * 1000,
+          });
+
+      console.log("Old token replaced. New refresh token:", newRefreshToken);
+
+      return res.status(200).json({ 
+        success: true, 
+        accessToken: newAccessToken ,
+        // refreshToken: newRefreshToken,
+      });
+
+      // const newAccessToken = generateAccessToken({ _id: user.id, role: user.role });
+      return res.status(200).json({ success: true, accessToken: newAccessToken });
+    });
+  } catch (error) {
+    console.error("Error in refreshToken:", error.message);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
 
 export const register = async (req, res) => {
@@ -132,54 +180,6 @@ export const register = async (req, res) => {
       message: 'Users Created successfully', user: userObj});
   } catch (err) {
     res.status(400).json({success : false,  statusCode: 400, message: 'Failed to create user', error: err.message });
-  }
-};
-
-
-export const refreshToken =async (req, res) => {
-  try {
-  const token = req.cookies.refreshToken;
-  // console.log("token from cookies",token)
-    if (!token) {
-      return res.status(400).json({ success: false, message: "Refresh token is required" });
-    }
-
-    const existingToken = await refreshModel.findOne({ token });
-    if (!existingToken) return res.status(403).json({ message: "Refresh token is invalid or already used" });
-
-    jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, async  (err, decoded) => {
-      if (err) {
-        console.error("Token verification failed:", err.message);
-        return res.status(403).json({ success: false, message: "Refresh token expired or invalid" });
-      }
-
-      const userId = decoded._id;
-      const user = await userModel.findById(userId);
-      if (!user) {
-        return res.status(404).json({ success: false, message: "User not found" });
-      }
-      const newAccessToken = generateAccessToken(user);
-      const newRefreshToken = generateRefreshToken(user);
-      await refreshModel.findOneAndReplace({ token }, { userId: user._id, token: newRefreshToken });
-          res.cookie('refreshToken', newRefreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: 'None',
-            maxAge: 15 * 24 * 60 * 60 * 1000,
-          });
-
-      return res.status(200).json({ 
-        success: true, 
-        accessToken: newAccessToken ,
-        // refreshToken: newRefreshToken,
-      });
-
-      // const newAccessToken = generateAccessToken({ _id: user.id, role: user.role });
-      return res.status(200).json({ success: true, accessToken: newAccessToken });
-    });
-  } catch (error) {
-    console.error("Error in refreshToken:", error.message);
-    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
