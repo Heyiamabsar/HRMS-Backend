@@ -354,16 +354,20 @@ export const getAllUsersTodayAttendance = async (req, res) => {
   try {
     const date = moment().format("YYYY-MM-DD");
 
-    const attendances = await AttendanceModel.find({ date })
+    const attendances = await AttendanceModel.find({ date,userId: { $exists: true,$ne: null }, })
       .populate(
         "userId",
         "first_name last_name email status userId  department designation salary role"
       )
       .sort({ inTime: 1, outTime: 1 });
 
+      // const validAttendances = attendances.filter((a) => a.userId && a.userId._id);
+
     const result = await Promise.all(
       attendances.map(async (attendance) => {
-        const user = await userModel.findById(attendance.User);
+        // const user = await userModel.findById(attendance?.userId?._id);
+        console.log(attendance?.userId?._id)
+
         const isSunday = moment(attendance.date).day() === 0;
 
         if (
@@ -387,14 +391,14 @@ export const getAllUsersTodayAttendance = async (req, res) => {
                 role: attendance.userId.role || null,
               }
             : {
-                userId: user._id || null,
-                firstName: user.first_name || null,
-                lastName: user.last_name || null,
-                email: user.email || null,
-                department: user.department || null,
-                designation: user.designation || null,
-                salary: user.salary || null,
-                role: user.role || null,
+                // userId: user._id || null,
+                // firstName: user.first_name || null,
+                // lastName: user.last_name || null,
+                // email: user.email || null,
+                // department: user.department || null,
+                // designation: user.designation || null,
+                // salary: user.salary || null,
+                // role: user.role || null,
               },
           date: attendance.date || null,
           inTime: attendance.inTime || null,
