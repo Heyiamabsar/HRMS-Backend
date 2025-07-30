@@ -278,7 +278,7 @@ export const getSinglePayrollsById = async (req, res) => {
         message: "User not found",
       });
     }
-    console.log("employee",employee)
+    // console.log("employee",employee)
     let statusFilter = [];
 
     if (employee.role === 'employee') {
@@ -319,7 +319,7 @@ export const getSalarySlipById = async (req, res) => {
     const payrollId = req.params.id;
 
     const payroll = await payrollModel.findById(payrollId).populate('userId', 'first_name last_name role email department userId designation joining_date payrollDetails ');
-console.log("payroll",payroll)
+// console.log("payroll",payroll)
     if (!payroll) {
       return res.status(404).json({
         success: false,

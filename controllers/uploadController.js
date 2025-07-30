@@ -150,7 +150,7 @@ export const deleteUpload = async (req, res) => {
 export const getUserUploads = async (req, res) => {
   try {
     const userId = req.params.id;
-// console.log("userId",userId)
+console.log("userId",userId)
     // Step 1: Get user and check
     const user = await userModel.findById(userId);
     if (!user) {
