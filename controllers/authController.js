@@ -13,7 +13,7 @@ dotenv.config();
 
 const generateAccessToken = (user) => {
   return jwt.sign(
-    { _id: user._id, role: user.role },
+    { _id: user._id, role: user.role, email: user.email,isDeleted: user.isDeleted },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
   );
@@ -21,7 +21,7 @@ const generateAccessToken = (user) => {
 
 const generateRefreshToken = (user) => {
   const refreshToken = jwt.sign(
-    { _id: user._id, role: user.role },
+    { _id: user._id, role: user.role, email: user.email,isDeleted: user.isDeleted },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
   );
@@ -42,7 +42,7 @@ export const login = async (req, res) => {
     }
 
       const token = jwt.sign(
-    { _id: user._id, role: user.role },process.env.JWT_SECRET,{ expiresIn: '9h' });
+    { _id: user._id, role: user.role, email: user.email,isDeleted: user.isDeleted },process.env.JWT_SECRET,{ expiresIn: '9h' });
 
       const accessToken = generateAccessToken(user);
       const refreshToken = generateRefreshToken(user);

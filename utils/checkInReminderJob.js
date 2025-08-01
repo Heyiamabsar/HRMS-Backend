@@ -1,14 +1,13 @@
-// jobs/checkInReminderJob.js
 import cron from "node-cron";
-import sendReminderEmails, { transporter } from "./sendReminderEmails.js";
+import sendReminderEmails from "./sendReminderEmails.js";
 import userModel from "../models/userModel.js";
 import AttendanceModel from "../models/attendanceModule.js";
+import { transporter } from "./emailTransporter.js";
 
 const testMode = process.env.TEST_MODE === "true";
 const reminderCounts = {};
 
 export const startCheckInReminderJob = async () => {
-
   transporter.verify((err, success) => {
     if (err) {
       console.error("❌ SMTP verification failed:", err.message);
@@ -21,7 +20,9 @@ export const startCheckInReminderJob = async () => {
     console.log(`🕐 Running check-in reminder job...`);
 
     // const users = await userModel.find({ role: { $in: ["employee", "hr"] } });
-    const users = await userModel.find({ role: { $in: ["employee", "hr","admin"] } });
+    const users = await userModel.find({
+      role: { $in: ["employee", "hr", "admin"] },
+    });
 
     console.log(`Found ${users.length} users to send reminders`);
     for (const [index, user] of users.entries()) {
@@ -31,42 +32,20 @@ export const startCheckInReminderJob = async () => {
 
       if (testMode || reminderCounts[userId] < 4) {
         setTimeout(async () => {
-          // console.log(
-          //   `[${testMode ? "TEST" : "PROD"}] Sending reminder to: ${user.email}`
-          // );
-
-          const currentDate = new Date().toISOString().split("T")[0];
-          const attendance = await AttendanceModel.findOne({
-            user: user._id,
-            date: currentDate,
-          });
-
-          if (!attendance || !attendance.checkInTime) {
-            console.log(
-              `[${testMode ? "TEST" : "PROD"}] Sending reminder to: ${
-                user.email
-              }`
-            );
-            await sendReminderEmails(user);
-            if (!testMode) reminderCounts[userId]++;
-          } else {
-            console.log(`⏸️ No email sent. ${user.email} already checked in.`);
-          }
-          // await sendReminderEmails(user);
-          // if (!testMode) reminderCounts[userId]++;
+          const sent = await sendReminderEmails(user);
+          if (sent && !testMode) reminderCounts[userId]++;
         }, index * 5000);
       }
     }
   };
 
-  // const cronExpression = testMode ? "*/1 * * * *" : "30,40,50 8 * * *,0,10,20 9 * * *";
   if (testMode) {
-      console.log("✅ Running in TEST mode - Cron every 2 min");
+    console.log("✅ Running in TEST mode - Cron every 2 min");
     cron.schedule("*/2 * * * *", sendReminders, {
       timezone: "Asia/Kolkata",
     });
   } else {
-     console.log("✅ Running in PROD mode - Scheduled reminders");
+    console.log("✅ Running in PROD mode - Scheduled reminders");
     // 8:30, 8:40, 8:50
     cron.schedule("45,55 8 * * *", sendReminders, {
       timezone: "Asia/Kolkata",
@@ -77,39 +56,4 @@ export const startCheckInReminderJob = async () => {
       timezone: "Asia/Kolkata",
     });
   }
-
-  // cron.schedule(
-  //   cronExpression,
-  // async () => {
-  //   console.log(`🕐 Running check-in reminder job...`);
-
-  //   for (const [index, user] of users.entries()) {
-  //     const userId = user._id.toString();
-
-  //     if (!reminderCounts[userId]) reminderCounts[userId] = 0;
-
-  //     if (testMode || reminderCounts[userId] < 5) {
-  //       setTimeout(async () => {
-  //         console.log(`[${testMode ? "TEST" : "PROD"}] Sending reminder to: ${user.email}`);
-  //         await sendReminderEmails(user);
-  //         if (!testMode) reminderCounts[userId]++;
-  //       }, index * 5000); // Delay 5s between each
-  //     }
-  //   }
-  // },
-  //   {
-  //     scheduled: true,
-  //     timezone: "Asia/Kolkata",
-  //   }
-  // );
-
-  // cron.schedule("0 9 * * *", async () => {
-  //   if (reminderCount < 5) {
-  //     await sendReminderEmails(user); // Pass specific user
-  //     reminderCount++;
-  //   }
-  // }, {
-  //   scheduled: true,
-  //   timezone,
-  // });
 };

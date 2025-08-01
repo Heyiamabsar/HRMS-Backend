@@ -1,20 +1,11 @@
-// utils/sendReminderEmails.js
-import nodemailer from "nodemailer";
-import userModel from "../models/userModel.js";
 import AttendanceModel from "../models/attendanceModule.js";
+import { transporter } from "./emailTransporter.js";
 
-export const transporter = nodemailer.createTransport({
-  service: "Outlook",
-  auth: {
-    user: process.env.ADMIN_EMAIL,
-    pass: process.env.ADMIN_EMAIL_PASS,
-  },
-});
 const sendReminderEmails = async (user) => {
   try {
-    console.log(user?.email);
     const currentDate = new Date().toISOString().split("T")[0];
     const currentTime = new Date();
+    const nineAM = new Date(`${currentDate}T09:00:00+05:30`);
 
     const attendance = await AttendanceModel.findOne({
       user: user._id,
@@ -22,8 +13,6 @@ const sendReminderEmails = async (user) => {
     });
 
     if (!attendance || !attendance.checkInTime) {
-      const nineAM = new Date();
-      nineAM.setHours(9, 0, 0, 0);
 
       const isBefore9 = currentTime < nineAM;
 
@@ -41,16 +30,22 @@ const sendReminderEmails = async (user) => {
         subject,
         text,
       };
+      console.log("🕒 Now:", currentTime.toLocaleString());
+      console.log("⏰ 9 AM IST:", nineAM.toLocaleString());
+      console.log("⏳ isBefore9:", isBefore9);
       const info = await transporter.sendMail(mailOptions);
 
       console.log(
         `✅ Reminder sent to ${user?.email} | Message ID: ${info?.messageId}`
       );
+      return true;
     } else {
       console.log(`✅ ${user.email} has already checked in.`);
+      return false;
     }
   } catch (err) {
     console.error("❌ Failed to send reminder emails:", err.message);
+    return false;
   }
 };
 

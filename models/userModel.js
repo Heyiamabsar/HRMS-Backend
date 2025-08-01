@@ -35,10 +35,9 @@ const userSchema = new mongoose.Schema(
       maxlength: [50, "Last name must be less than 50 characters"],
     },
     phone: {
-      type: Number,
+      type: String,
       required: [true, "Phone number is required"],
-      minlength: [10, "Phone number must be 10 digits"],
-      maxlength: [10, "Phone number must be 10 digits"],
+      match: [/^\+[1-9]\d{1,14}$/, "Invalid international phone number"],
     },
     email: {
       type: String,
@@ -105,6 +104,11 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "hr", "employee"],
       default: "employee",
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    
     payrollDetails: {
       BankName: String,
       accountNumber: Number,
