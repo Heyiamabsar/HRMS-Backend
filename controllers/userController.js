@@ -70,6 +70,31 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+export const getAllDeletedUsers = async (req, res) => {
+  try {
+      const baseFilter =
+      req.user.role === 'hr'
+        ? { role: 'employee' }
+        : { role: { $in: ['employee', 'hr', 'admin'] } };
+
+    const filter = { ...baseFilter, isDeleted: true };
+    const users = await User.find(filter).select('-password -__v');
+
+    // console.log("Fetched Users:", users);
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: 'Deleted users fetched successfully',
+      data: {
+        count: users.length,
+        users,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ statusCode: 500, success: false, message: 'Failed to fetch users', error: error.message });
+  }
+};
+
 // Get User by ID
 export const getUserById = async (req, res) => {
   try {

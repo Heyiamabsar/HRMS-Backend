@@ -6,6 +6,7 @@ const branchSchema = new mongoose.Schema({
   branchCode: { type: String, required: true, unique: true },
   associatedUsers: { type: Number, default: 0 },
   address: { type: String, required: true },
+  weekends: { type: [String], default: ["Sunday"] },
   timeZone: { type: String, required: false },
 }, { timestamps: true });
 

@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema(
       },
     ],
     timeZone: { type: String },
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: false,
+    },
     first_name: {
       type: String,
       required: [true, "First name is required"],
@@ -34,11 +39,15 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: [50, "Last name must be less than 50 characters"],
     },
+
     phone: {
       type: String,
       required: [true, "Phone number is required"],
       // match: [/^\+[1-9]\d{1,14}$/, "Invalid international phone number"],
-      match: [/^(\+[1-9][0-9]{1,3}\s?)?[1-9][0-9]{9,13}$/, "Invalid international phone number"],
+      match: [
+        /^(\+[1-9][0-9]{1,3}\s?)?[1-9][0-9]{9,13}$/,
+        "Invalid international phone number",
+      ],
     },
     email: {
       type: String,
@@ -109,14 +118,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    
+
     payrollDetails: {
       BankName: String,
       accountNumber: Number,
       pfNumber: Number,
       ifscCode: String,
-      UNA: Number
-    }
+      UNA: Number,
+    },
   },
   {
     timestamps: true,

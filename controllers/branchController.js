@@ -6,7 +6,7 @@ import { withoutDeletedUsers } from "../utils/commonUtils.js";
 
 export const createBranch = async (req, res) => {
   try {
-    const { branchName, country, branchCode, associatedUsers, address, timeZone } = req.body;
+    const { branchName, country, branchCode, associatedUsers, address, timeZone, weekends } = req.body;
 
     if (!branchName || !country || !branchCode || !address ) {
       return res.status(400).json({ success: false, message: "All fields are required." });
@@ -23,7 +23,8 @@ export const createBranch = async (req, res) => {
       branchCode,
       associatedUsers: associatedUsers || 0,
       address,
-      timeZone
+      timeZone,
+      weekends: weekends || []
     });
 
     res.status(201).json({ success: true, branch: newBranch });
@@ -44,7 +45,7 @@ export const getAllBranches = async (req, res) => {
         return {
           ...branch.toObject(),
           associatedUsersCount: users.length,
-          associatedUsersList: users,
+          // associatedUsersList: users,
         };
       })
     );
@@ -75,4 +76,6 @@ export const getBranchById = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch branch", error: error.message });
   }
 };
+
+
 
