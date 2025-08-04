@@ -12,7 +12,7 @@ employeeRouter.get('/designation', getAllDesignations);
 employeeRouter.get('/department', getAllDepartments);
 employeeRouter.get('/:id', authorizeRoles('admin', 'hr', 'employee'), getUserById);
 employeeRouter.put('/:id', authorizeRoles('admin', 'hr'), updateUser);
-employeeRouter.put('/:id', authorizeRoles('admin', 'hr'), deleteUser);
+employeeRouter.patch('/:id', authorizeRoles('admin', 'hr'), deleteUser);
 employeeRouter.patch('/update_profile_by_self', authorizeRoles('admin', 'hr','employee'), updateProfileBySelf);
 
 employeeRouter.put('/reset_password/:id', authorizeRoles('admin'), updateUserPassword);

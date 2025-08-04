@@ -303,14 +303,24 @@ export const deleteUser = async (req, res) => {
     const loginUser = await userModel.findById(loginUserId);
 
     // const deletedUser = await User.findByIdAndDelete(req.params.id);
-    const deletedUser = await User.findByIdAndUpdate(
+    const deletedUser = await userModel.findByIdAndUpdate(
+
       req.params.id,
       { isDeleted: true },
       { new: true }
     );
+      console.log("deletedUser",deletedUser)
 
     if (!deletedUser) {
       return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
+    }
+
+    if (!deletedUser) {
+      return res.status(404).json({
+        statusCode: 404,
+        success: false,
+        message: 'User not found',
+      });
     }
 
     await sendNotification({
