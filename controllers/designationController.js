@@ -1,5 +1,6 @@
 import designationModel from "../models/designationModel.js";
 import userModel from "../models/userModel.js";
+import { withoutDeletedUsers } from "../utils/commonUtils.js";
 
 export const getAllDesignations = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ export const getAllDesignations = async (req, res) => {
 
         const result = await Promise.all(
         designations.map(async (design) => {
-        const users = await userModel.find({ designation: design.name }).select('name first_name last_name email role');
+        const users = await userModel.find(withoutDeletedUsers({ designation: design.name })).select('name first_name last_name email role');
         return {
           ...design.toObject(),
           associatedUsersCount: users.length,
@@ -39,7 +40,7 @@ export const getDesignationById = async (req, res) => {
     const designation = await designationModel.findById(req.params.id);
     if (!designation) return res.status(404).json({ success: false, message: "Designation not found" });
 
-    const users = await userModel.find({ designation: designation.name }).select('name first_name last_name email role');
+    const users = await userModel.find(withoutDeletedUsers({ designation: designation.name })).select('name first_name last_name email role');
 
     res.status(200).json({
       success: true,

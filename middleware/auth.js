@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import userModel from '../models/userModel.js';
 import bcrypt from 'bcrypt';
+import { withoutDeletedUsers } from '../utils/commonUtils.js';
 dotenv.config();
 
 export const authenticate = async(req, res, next) => {
@@ -49,7 +50,7 @@ export const authorizeRoles = (...roles) => {
         });
       }
 
-      const user = await userModel.findById(req.user._id).select('role');
+      const user = await userModel.findById(withoutDeletedUsers({ _id: req.user._id })).select('role');
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -83,7 +84,7 @@ export const authorizeRoles = (...roles) => {
 export const isVerifiedPass = async (req, res, next) => {
 
       const { email, password } = req.body;
-        const user = await userModel.findOne({ email })
+        const user = await userModel.findOne(withoutDeletedUsers({ email }))
 
    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({

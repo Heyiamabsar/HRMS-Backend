@@ -104,7 +104,7 @@ export const deleteUpload = async (req, res) => {
 
   try {
     	const userId=req.user._id
-        const user = await userModel.findById(userId);
+      const user = await userModel.findById(userId);
 
     const upload = await UploadModel.findByIdAndDelete(id);
     if (!upload) {

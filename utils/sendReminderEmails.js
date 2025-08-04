@@ -8,11 +8,11 @@ const sendReminderEmails = async (user) => {
     const nineAM = new Date(`${currentDate}T09:00:00+05:30`);
 
     const attendance = await AttendanceModel.findOne({
-      user: user._id,
+      userId: user._id,
       date: currentDate,
-    });
-
-    if (!attendance || !attendance.checkInTime) {
+    }).lean();
+      console.log(`[DEBUG] Check-in Time for ${user.email}:`, attendance);
+    if (!attendance || !attendance.inTime) {
 
       const isBefore9 = currentTime < nineAM;
 

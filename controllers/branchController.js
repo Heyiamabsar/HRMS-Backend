@@ -1,5 +1,6 @@
 import branchModel from "../models/branchModel.js";
 import userModel from "../models/userModel.js";
+import { withoutDeletedUsers } from "../utils/commonUtils.js";
 
 
 
@@ -39,7 +40,7 @@ export const getAllBranches = async (req, res) => {
 
     const updatedBranches = await Promise.all(
       branches.map(async (branch) => {
-        const users = await userModel.find({ branch: branch.branchName }).select('name first_name last_name email role'); 
+        const users = await userModel.find(withoutDeletedUsers({ branch: branch.branchName })).select('name first_name last_name email role'); 
         return {
           ...branch.toObject(),
           associatedUsersCount: users.length,
@@ -60,7 +61,7 @@ export const getBranchById = async (req, res) => {
     const branch = await branchModel.findById(req.params.id);
     if (!branch) return res.status(404).json({ success: false, message: "Branch not found" });
 
-    const users = await userModel.find({ branch: branch.branchName }).select('name first_name last_name email role');
+    const users = await userModel.find(withoutDeletedUsers({ branch: branch.branchName })).select('name first_name last_name email role');
 
     res.status(200).json({
       success: true,

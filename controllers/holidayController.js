@@ -4,6 +4,7 @@ import moment from "moment";
 import holidayModel from "../models/holidayModule.js";
 import { sendNotification } from "../utils/notificationutils.js";
 import userModel from "../models/userModel.js";
+import { withoutDeletedUsers } from "../utils/commonUtils.js";
 
 
 
@@ -26,7 +27,7 @@ export const addCustomHoliday = async (req, res) => {
     const holiday = new holidayModel({ date: holidayDate, reason, isCustom: true , isOptional: isOptional || false });
     await holiday.save();
 
-    const users = await userModel.find({ role: "user" });
+    const users = await userModel.find(withoutDeletedUsers({ role: "user" }));
 
     const notifications = users.map(user => ({
       userId: user._id,
@@ -91,7 +92,7 @@ export const updateHoliday = async (req, res) => {
     await holiday.save();
 
 
-    const users = await userModel.find({ role: "user" });
+    const users = await userModel.find(withoutDeletedUsers({ role: "user" }));
 
     const notifications = users.map(user => ({
       userId: user._id,

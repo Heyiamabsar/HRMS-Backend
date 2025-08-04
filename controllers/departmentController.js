@@ -1,5 +1,6 @@
 import departmentModel from "../models/departmentModel.js";
 import userModel from "../models/userModel.js";
+import { withoutDeletedUsers } from "../utils/commonUtils.js";
 
 export const getAllDepartments = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ export const getAllDepartments = async (req, res) => {
     const departments = await departmentModel.find()
     const result = await Promise.all(
       departments.map(async (dept) => {
-        const users = await userModel.find({ department: dept.name }).select('name first_name last_name email role');
+        const users = await userModel.find(withoutDeletedUsers({ department: dept.name })).select('name first_name last_name email role');
         return {
           ...dept.toObject(),
           associatedUsersCount: users.length,
@@ -37,7 +38,7 @@ export const getDepartmentById = async (req, res) => {
     const department = await departmentModel.findById(req.params.id);
     if (!department) return res.status(404).json({ success: false, message: "Department not found" });
 
-    const users = await userModel.find({ department: department.name }).select('name first_name last_name email role');
+    const users = await userModel.find(withoutDeletedUsers({ department: department.name })).select('name first_name last_name email role');
 
     res.status(200).json({
       success: true,

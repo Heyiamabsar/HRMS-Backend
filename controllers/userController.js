@@ -5,7 +5,7 @@ import { sendNotification } from '../utils/notificationutils.js';
 import userModel from '../models/userModel.js';
 import departmentModel from '../models/departmentModel.js';
 import designationModel from '../models/designationModel.js';
-
+import {withoutDeletedUsers} from '../utils/commonUtils.js'
 
 // Save User Time Zone
 export const saveUserTimeZone = async (req, res) => {
@@ -52,7 +52,7 @@ export const saveUserTimeZone = async (req, res) => {
 // Get All Users
 export const getAllUsers = async (req, res) => {
   try {
-    const filter = req.user.role === 'hr' ? { role: 'employee' } : { role: { $in: ['employee', 'hr', 'admin'] } };
+    const filter =withoutDeletedUsers(req.user.role === 'hr' ? { role: 'employee' } : { role: { $in: ['employee', 'hr', 'admin'] } }) 
     const users = await User.find(filter).select('-password -__v');
 
     // console.log("Fetched Users:", users);
@@ -274,10 +274,15 @@ export const updateUserPassword = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
 
-    	const loginUserId=req.user._id
- 	const loginUser = await userModel.findById(loginUserId);
+    const loginUserId=req.user._id
+    const loginUser = await userModel.findById(loginUserId);
 
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    // const deletedUser = await User.findByIdAndDelete(req.params.id);
+    const deletedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: true },
+      { new: true }
+    );
 
     if (!deletedUser) {
       return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });

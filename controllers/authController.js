@@ -8,6 +8,7 @@ import { sendNotification } from '../utils/notificationutils.js';
 import designationModel from '../models/designationModel.js';
 import departmentModel from '../models/departmentModel.js';
 import refreshModel from '../models/refreshTokenModel.js';
+import { withoutDeletedUsers } from '../utils/commonUtils.js';
 dotenv.config();
 
 
@@ -32,7 +33,8 @@ const generateRefreshToken = (user) => {
 export const login = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await userModel.findOne({ email });
+    // const user = await userModel.findOne({ email });
+    const user = await userModel.findOne(withoutDeletedUsers({ email }));
     if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
