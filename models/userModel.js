@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema(
       required: [true, "Phone number is required"],
       // match: [/^\+[1-9]\d{1,14}$/, "Invalid international phone number"],
       match: [
-        /^(\+[1-9][0-9]{1,3}\s?)?[1-9][0-9]{9,13}$/,
+        /^(\+[1-9][0-9]{1,3}\s?)?[1-9][0-9]{9,13}$/, 
         "Invalid international phone number",
       ],
     },
