@@ -78,4 +78,60 @@ export const getBranchById = async (req, res) => {
 };
 
 
+export const updateBranch = async (req, res) => {
+try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Validate weekends if present
+    if (updateData.weekends && !Array.isArray(updateData.weekends)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide weekends as an array",
+      });
+    }
+
+    // Get current branch before updating
+    const existingBranch = await branchModel.findById(id);
+    if (!existingBranch) {
+      return res.status(404).json({
+        success: false,
+        message: "Branch not found",
+      });
+    }
+
+    const oldBranchName = existingBranch.branchName;
+    const updatedBranch = await branchModel.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    );
+
+    // If branchName was changed, update userModel
+    if (
+      updateData.branchName &&
+      updateData.branchName !== oldBranchName
+    ) {
+      await userModel.updateMany(
+        { branch: oldBranchName },
+        { $set: { branch: updateData.branchName } }
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Branch updated successfully",
+      branch: updatedBranch,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating branch",
+      error: err.message,
+    });
+  }
+};
+
+
+
 
