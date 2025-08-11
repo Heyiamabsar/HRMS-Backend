@@ -24,9 +24,6 @@ import branchRouter from "./routes/branchRoutes.js";
 import { startCheckInReminderJob } from "./utils/checkInReminderJob.js";
 
 
-
-
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
