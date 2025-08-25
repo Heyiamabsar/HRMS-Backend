@@ -22,6 +22,7 @@ import departmentRouter from "./routes/departmentRouts.js";
 import designationRouter from "./routes/designationRoutes.js";
 import branchRouter from "./routes/branchRoutes.js";
 import { startCheckInReminderJob } from "./utils/checkInReminderJob.js";
+import dailyReportRouter from "./routes/dailyreportRoutes.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -75,6 +76,7 @@ app.use('/api/report', reportRouter);
 app.use('/api/holidays', holidayRouter);
 app.use('/api/cloud_excel', cloudExcelRouter);
 app.use('/api/notifications', notificationRouter);
+app.use('/api/daily_reports', dailyReportRouter);
 
 app.get("/", (req, res) => {
   res.send("HRMS Backend is running ");

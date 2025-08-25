@@ -396,3 +396,27 @@ export const getAllDesignations = async (req, res) => {
     });
   }
 };
+
+
+
+export const addIsDeletedField = async (req, res) => {
+  try {
+    const result = await userModel.updateMany(
+      { isDeleted: { $exists: false } }, // jisme nahi hai
+      { $set: { isDeleted: false } }     // default add karo
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "isDeleted field added to all missing documents",
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Migration failed",
+      error: error.message
+    });
+  }
+};

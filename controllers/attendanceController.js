@@ -489,71 +489,6 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
   }
 };
 
-// Get all users' full attendance history
-// export const getAllUsersFullAttendanceHistory = async (req, res) => {
-//   try {
-//     const records = await AttendanceModel.find().populate(
-//       "userId",
-//       "first_name last_name email phone joining_date department designation salary role userId"
-//     );;
-//     const users = await userModel.find({});
-
-//     const attendanceByUser = {};
-
-//     records.forEach((recordDoc) => {
-//       const isWeekend = moment(recordDoc.date).day() === 0;
-//       if (
-//         !recordDoc.inTime &&
-//         !recordDoc.outTime &&
-//         (recordDoc.status === "Absent" || !recordDoc.status)
-//       ) {
-//         recordDoc.status = isWeekend ? "Weekend" : "Absent";
-//         recordDoc.save(); // No need to await inside forEach
-//       }
-//       if (!recordDoc.userId) return;
-
-//       const user = users.find(
-//         (u) => u._id?.toString() === recordDoc.userId?.toString()
-//       );
-//       if (!user) return;
-
-//       const record = recordDoc.toObject();
-//       const userIdStr = user._id.toString();
-
-//       if (!attendanceByUser[userIdStr]) {
-//         attendanceByUser[userIdStr] = {
-//           userId: userIdStr,
-//           empId: user?.userId,
-//           userName: `${user.first_name} ${user.last_name}`,
-//           userEmail: user.email,
-//           userPhone: user.phone,
-//           joining_date: user.joining_date,
-//           department: user.department,
-//           designation: user.designation,
-//           salary: user.salary,
-//           role: user.role,
-//           attendanceHistory: [],
-//         };
-//       }
-
-//       attendanceByUser[userIdStr].attendanceHistory.push(record);
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       statusCode: 200,
-//       message: "All users' attendance history fetched successfully",
-//       data: Object.values(attendanceByUser), // Convert to array if needed
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       statusCode: 500,
-//       message: "Error fetching full attendance history",
-//       error: error.message,
-//     });
-//   }
-// };
 
 export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
@@ -777,6 +712,75 @@ export const getAllUsersAttendanceReport = async (req, res) => {
   }
 };
 
+
+// Get all users' full attendance history
+// export const getAllUsersFullAttendanceHistory = async (req, res) => {
+//   try {
+//     const records = await AttendanceModel.find().populate(
+//       "userId",
+//       "first_name last_name email phone joining_date department designation salary role userId"
+//     );;
+//     const users = await userModel.find({});
+
+//     const attendanceByUser = {};
+
+//     records.forEach((recordDoc) => {
+//       const isWeekend = moment(recordDoc.date).day() === 0;
+//       if (
+//         !recordDoc.inTime &&
+//         !recordDoc.outTime &&
+//         (recordDoc.status === "Absent" || !recordDoc.status)
+//       ) {
+//         recordDoc.status = isWeekend ? "Weekend" : "Absent";
+//         recordDoc.save(); // No need to await inside forEach
+//       }
+//       if (!recordDoc.userId) return;
+
+//       const user = users.find(
+//         (u) => u._id?.toString() === recordDoc.userId?.toString()
+//       );
+//       if (!user) return;
+
+//       const record = recordDoc.toObject();
+//       const userIdStr = user._id.toString();
+
+//       if (!attendanceByUser[userIdStr]) {
+//         attendanceByUser[userIdStr] = {
+//           userId: userIdStr,
+//           empId: user?.userId,
+//           userName: `${user.first_name} ${user.last_name}`,
+//           userEmail: user.email,
+//           userPhone: user.phone,
+//           joining_date: user.joining_date,
+//           department: user.department,
+//           designation: user.designation,
+//           salary: user.salary,
+//           role: user.role,
+//           attendanceHistory: [],
+//         };
+//       }
+
+//       attendanceByUser[userIdStr].attendanceHistory.push(record);
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       statusCode: 200,
+//       message: "All users' attendance history fetched successfully",
+//       data: Object.values(attendanceByUser), // Convert to array if needed
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       statusCode: 500,
+//       message: "Error fetching full attendance history",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
 // export const migrateStringDatesToDateType = async (req, res) => {
 //   try {
 //     // Count records with string-type date
@@ -828,3 +832,98 @@ export const getAllUsersAttendanceReport = async (req, res) => {
 //     });
 //   }
 // };
+
+
+export const backFillAttendance = async (req, res) => {
+  try {
+    const { userId, fromDate, toDate } = req.body;
+
+    if (!userId || !fromDate || !toDate) {
+      return res.status(400).json({
+        success: false,
+        message: "userId, fromDate and toDate are required",
+      });
+    }
+
+    const start = moment(fromDate, "YYYY-MM-DD");
+    const end = moment(toDate, "YYYY-MM-DD");
+
+    if (!start.isValid() || !end.isValid() || start.isAfter(end)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date range",
+      });
+    }
+
+    const staticLocation = {
+      latitude: 19.1872137,
+      longitude: 77.3169113,
+      address: {
+        city: "Mumbai",
+        county: "Mumbai",
+        state_district: "Mumbai",
+        state: "Maharashtra",
+        postcode: "431600",
+        country: "India",
+        country_code: "in"
+      },
+      displayName: "Mumbai, Maharashtra, 431600, India",
+      punchedFrom: "Web"
+    }
+
+    const attendanceRecords = [];
+    let skipped = 0;
+
+    let current = start.clone();
+    while (current.isSameOrBefore(end)) {
+      const day = current.format("dddd");
+      const date = current.format("YYYY-MM-DD");
+
+      if (day !== "Sunday") {
+        const exists = await AttendanceModel.findOne({ userId, date });
+        if (exists) {
+          skipped++;
+        } else {
+          // Random Check-In between 8:30 AM - 9:00 AM
+          const checkInMinute = 30 + Math.floor(Math.random() * 31);
+          const inTime = moment(`${date} 08:${checkInMinute}`, "YYYY-MM-DD HH:mm").toDate();
+
+          // Random Check-Out between 6:20 PM - 6:40 PM
+          const checkOutMinute = 20 + Math.floor(Math.random() * 21);
+          const outTime = moment(`${date} 18:${checkOutMinute}`, "YYYY-MM-DD HH:mm").toDate();
+
+          attendanceRecords.push({
+            userId,
+            date,
+            inTime,
+            outTime,
+            status: "Present",
+            duration: moment.utc(outTime - inTime).format("HH:mm:ss"),
+            location: {
+              checkIn: staticLocation,
+              checkOut: staticLocation
+            }
+          });
+        }
+      }
+      current.add(1, "day");
+    }
+
+    if (attendanceRecords.length > 0) {
+      await AttendanceModel.insertMany(attendanceRecords);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Attendance backfill completed successfully",
+      totalInserted: attendanceRecords.length,
+      skipped,
+      data: attendanceRecords
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
