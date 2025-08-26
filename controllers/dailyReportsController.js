@@ -67,7 +67,7 @@ export const addDailyReport = async (req, res) => {
       error: error.message
     });
   }
-};
+}; 
 
 
 export const getAllReports = async (req, res) => {
@@ -110,6 +110,55 @@ export const getAllReports = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server error while fetching reports",
+      error: error.message
+    });
+  }
+};
+
+export const getReportById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const report = await DailyReportModel.findById(id).populate("userId", "name email role");
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      report
+    });
+
+  } catch (error) {
+    console.error("Error fetching report by ID:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching report",
+      error: error.message
+    });
+  }
+};
+
+export const getMyReports = async (req, res) => {
+  try {
+    console.log("Fetching my reports for user:", req.user._id);
+    const reports = await DailyReportModel.find({ userId: req.user._id })
+      .sort({ date: -1 });
+
+    res.status(200).json({
+      success: true,
+      totalReports: reports.length,
+      reports
+    });
+
+  } catch (error) {
+    console.error("Error fetching user reports:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching your reports",
       error: error.message
     });
   }
