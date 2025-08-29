@@ -144,7 +144,7 @@ export const getReportById = async (req, res) => {
 
 export const getMyReports = async (req, res) => {
   try {
-    console.log("Fetching my reports for user:", req.user._id);
+
     const reports = await DailyReportModel.find({ userId: req.user._id })
       .sort({ date: -1 });
 

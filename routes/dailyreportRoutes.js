@@ -10,7 +10,6 @@ dailyReportRouter.post('/create', authorizeRoles('admin','hr','employee') , addD
 dailyReportRouter.get('/all', authorizeRoles('admin','hr') ,getAllReports);
 
 dailyReportRouter.get('/my_reports', authorizeRoles('admin','hr','employee') ,getMyReports);
-
 dailyReportRouter.get('/:id', authorizeRoles('admin','hr') ,getReportById);
 
 
