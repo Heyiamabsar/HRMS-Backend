@@ -142,6 +142,60 @@ export const getReportById = async (req, res) => {
   }
 };
 
+
+export const updateTaskStatus = async (req, res) => {
+  try {
+    const { reportId, taskId } = req.params;
+    const { status } = req.body;
+
+    if (!status || !["Pending", "In Progress", "Completed"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Allowed values: Pending, In Progress, Completed"
+      });
+    }
+
+    // Find the report and update the specific task
+    const report = await DailyReportModel.findOneAndUpdate(
+      { _id: reportId, "reports._id": taskId },
+      { $set: { "reports.$.status": status } },
+      { new: true }
+    );
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report or task not found"
+      });
+    }
+
+    // Check permission after finding the report
+    if (report.userId.toString() !== req.user._id.toString() && req.user.role === "Employee") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to update this task status"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Task status updated successfully",
+      report
+    });
+
+  } catch (error) {
+    console.error("Error updating task status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating task status",
+      error: error.message
+    });
+  }
+};
+
+
+
+
 export const getMyReports = async (req, res) => {
   try {
 
@@ -165,3 +219,108 @@ export const getMyReports = async (req, res) => {
 };
 
 
+
+export const updateDailyReport = async (req, res) => {
+  try {
+    const { reportId, taskIndex } = req.params;
+    const updateData = req.body;
+
+    const report = await DailyReportModel.findById(reportId);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found"
+      });
+    }
+
+    // Check permission
+    if (report.userId.toString() !== req.user._id.toString() && req.user.role === "Employee") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to update this report"
+      });
+    }
+
+    if (!report.reports[taskIndex]) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found in this report"
+      });
+    }
+
+    // Update specific task
+    report.reports[taskIndex] = { ...report.reports[taskIndex]._doc, ...updateData };
+    await report.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Task updated successfully",
+      report
+    });
+
+  } catch (error) {
+    console.error("Error updating daily report:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating report",
+      error: error.message
+    });
+  }
+};
+
+
+export const deleteDailyReportTask = async (req, res) => {
+  try {
+    const { reportId, taskIndex } = req.params;
+
+    const report = await DailyReportModel.findById(reportId);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found"
+      });
+    }
+
+    // Check permission
+    if (report.userId.toString() !== req.user._id.toString() && req.user.role === "Employee") {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this task"
+      });
+    }
+
+    if (!report.reports[taskIndex]) {
+      return res.status(404).json({
+        success: false,
+        message: "Task not found"
+      });
+    }
+
+    // Remove the task
+    report.reports.splice(taskIndex, 1);
+
+    if (report.reports.length === 0) {
+      await DailyReportModel.findByIdAndDelete(reportId);
+      return res.status(200).json({
+        success: true,
+        message: "Last task deleted, daily report removed completely"
+      });
+    } else {
+      await report.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Task deleted successfully",
+      report
+    });
+
+  } catch (error) {
+    console.error("Error deleting daily report task:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting task",
+      error: error.message
+    });
+  }
+};
