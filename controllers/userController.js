@@ -122,13 +122,29 @@ export const getUserById = async (req, res) => {
 // Update User
 export const updateUser = async (req, res) => {
   try {
-    	const loginUserId=req.user._id
-    	const loginUser = await userModel.findById(loginUserId);
-      const { password, department, designation,  ...updateData } = req.body;
+    const loginUserId = req.user._id;
+    const loginUser = await userModel.findById(loginUserId);
+    const { password, role, department, designation, ...updateData } = req.body;
 
-     if(password){
-      return res.status(404).json({ statusCode: 404, success: false, message: "You don't have permission to reset the password" });
-     }
+    // Block password update
+    if (password) {
+      return res.status(403).json({
+        statusCode: 403,
+        success: false,
+        message: "You don't have permission to reset the password"
+      });
+    }
+
+    // Block role update
+    if (role) {
+      return res.status(403).json({
+        statusCode: 403,
+        success: false,
+        message: "Role cannot be updated here"
+      });
+    }
+
+    // Handle department
     if (department) {
       const departmentExists = await departmentModel.findOne({ name: department });
       if (!departmentExists) {
@@ -136,8 +152,8 @@ export const updateUser = async (req, res) => {
       }
       updateData.department = department;
     }
-  
-  
+
+    // Handle designation
     if (designation) {
       const designationExists = await designationModel.findOne({ name: designation });
       if (!designationExists) {
@@ -145,32 +161,108 @@ export const updateUser = async (req, res) => {
       }
       updateData.designation = designation;
     }
-     
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+    // Update user
+    const updatedUser = await userModel.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
     if (!updatedUser) {
-      return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
+      return res.status(404).json({
+        statusCode: 404,
+        success: false,
+        message: 'User not found'
+      });
     }
 
-      await sendNotification({
-        forRoles: ["admin", "hr"],
-        title: "User Updated",
-        message: `${loginUser.first_name} ${loginUser.last_name} updated details of ${updatedUser.first_name} ${updatedUser.last_name}`,
-        link: `/employees`,
-        type: "admin",
-        performedBy: loginUser._id
-      });
+    // Send notification
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "User Updated",
+      message: `${loginUser.first_name} ${loginUser.last_name} updated details of ${updatedUser.first_name} ${updatedUser.last_name}`,
+      link: `/employees`,
+      type: "admin",
+      performedBy: loginUser._id
+    });
 
     res.status(200).json({
       statusCode: 200,
       success: true,
       message: 'User updated successfully',
-      data: updatedUser,
+      data: updatedUser
     });
   } catch (error) {
-    res.status(500).json({ statusCode: 500, success: false, message: 'Failed to update user', error: error.message });
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: 'Failed to update user',
+      error: error.message
+    });
   }
 };
+
+
+export const updateUserRole = async (req, res) => {
+  try {
+    const loginUserId = req.user._id;
+    const loginUser = await userModel.findById(loginUserId);
+    const { role } = req.body;
+
+    if (!role) {
+      return res.status(400).json({
+        statusCode: 400,
+        success: false,
+        message: "Role is required"
+      });
+    }
+
+    // Only superAdmin can update role
+    if (!["superAdmin"].includes(loginUser.role)) {
+      return res.status(403).json({
+        statusCode: 403,
+        success: false,
+        message: "You don't have permission to change roles"
+      });
+    }
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        statusCode: 404,
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "User Role Updated",
+      message: `${loginUser.first_name} ${loginUser.last_name} changed role of ${updatedUser.first_name} ${updatedUser.last_name} to ${role}`,
+      link: `/employees`,
+      type: "admin",
+      performedBy: loginUser._id
+    });
+
+    res.status(200).json({
+      statusCode: 200,
+      success: true,
+      message: 'Role updated successfully',
+      data: updatedUser
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: 'Failed to update role',
+      error: error.message
+    });
+  }
+};
+
 
 //update profile by self
 export const updateProfileBySelf = async (req, res) => {

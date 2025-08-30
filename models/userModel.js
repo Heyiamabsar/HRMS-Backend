@@ -111,7 +111,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "hr", "employee"],
+      enum: ["superAdmin","admin", "hr", "employee"],
       default: "employee",
     },
     isDeleted: {

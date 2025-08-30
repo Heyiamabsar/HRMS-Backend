@@ -1,5 +1,5 @@
 import express from 'express';
-import { deleteUser, getAllDeletedUsers,addIsDeletedField, getAllDepartments, getAllDesignations, getAllUsers, getDashboard, getUserById, saveUserTimeZone, updateProfileBySelf, updateUser, updateUserPassword } from '../controllers/userController.js';
+import { deleteUser, getAllDeletedUsers,addIsDeletedField, getAllDepartments, getAllDesignations, getAllUsers, getDashboard, getUserById, saveUserTimeZone, updateProfileBySelf, updateUser, updateUserPassword, updateUserRole } from '../controllers/userController.js';
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
 const employeeRouter = express.Router();
 
@@ -18,7 +18,8 @@ employeeRouter.get('/:id', authorizeRoles('admin', 'hr', 'employee'), getUserByI
 employeeRouter.put('/:id', authorizeRoles('admin', 'hr'), updateUser);
 employeeRouter.patch('/:id', authorizeRoles('admin', 'hr'), deleteUser);
 
-employeeRouter.put('/reset_password/:id', authorizeRoles('admin'), updateUserPassword);
+employeeRouter.put('/reset_password/:id', authorizeRoles('superAdmin'), updateUserPassword);
+employeeRouter.put('/update_role/:id', authorizeRoles('superAdmin'), updateUserRole);
 employeeRouter.post('/timezone', authorizeRoles('admin', 'hr', 'employee'), saveUserTimeZone);
 
 export default employeeRouter;
