@@ -10,7 +10,7 @@ dailyReportRouter.post('/create', authorizeRoles('superAdmin','admin','hr','empl
 dailyReportRouter.get('/all', authorizeRoles('superAdmin','admin','hr') ,getAllReports);
 
 dailyReportRouter.put('/update-task/:reportId/:taskId', authorizeRoles('superAdmin','admin','hr','employee') ,updateTaskStatus);
-dailyReportRouter.put('/update_report/:reportId/:taskIndex', authorizeRoles('superAdmin','admin','hr','employee') ,updateDailyReport);
+dailyReportRouter.put('/update_report/:reportId/:taskId', authorizeRoles('superAdmin','admin','hr','employee') ,updateDailyReport);
 
 dailyReportRouter.delete('/delete_task/:reportId/:taskIndex', authorizeRoles('superAdmin','admin','hr','employee') ,deleteDailyReportTask);
 dailyReportRouter.get('/my_reports', authorizeRoles('superAdmin','admin','hr','employee') ,getMyReports);
