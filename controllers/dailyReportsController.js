@@ -204,6 +204,29 @@ export const getMyReports = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: "Fetched your reports successfully",
+      totalReports: reports.length,
+      reports
+    });
+
+  } catch (error) {
+    console.error("Error fetching user reports:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching your reports",
+      error: error.message
+    });
+  }
+};
+export const getSingleUserReports = async (req, res) => {
+  try {
+
+    const reports = await DailyReportModel.find({ userId: req.params.userId })
+      .sort({ date: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "User reports fetched successfully",
       totalReports: reports.length,
       reports
     });

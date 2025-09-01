@@ -200,7 +200,6 @@ export const getLoginUserHolidays = async (req, res) => {
 
 
 
-
 //  Edit a custom holiday
 export const updateHoliday = async (req, res) => {
   try {
