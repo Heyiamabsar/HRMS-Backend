@@ -144,9 +144,29 @@ export const refreshToken =async (req, res) => {
 export const register = async (req, res) => {
   try {
 
-    const { email,department, designation } = req.body;
+    const { email,department, designation, role } = req.body;
     const userId=req.user._id
-    console.log(userId)
+
+      const loginUser = await userModel.findById(userId);
+
+    if (!loginUser) {
+      return res.status(403).json({
+        success: false,
+        statusCode: 403,
+        message: "Unauthorized user"
+      });
+    }
+
+    // ✅ Restrict creating superAdmin
+    if (role === "superAdmin" && loginUser.role !== "superAdmin") {
+      return res.status(403).json({
+        success: false,
+        statusCode: 403,
+        message: "Only superAdmin can create another superAdmin"
+      });
+    }
+
+
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success : false,  statusCode: 400,message:"Email already exists", error: "Email already exists" });
@@ -165,7 +185,6 @@ export const register = async (req, res) => {
     }
     
     const user = await userModel.create(req.body);
-    const loginUser = await userModel.findById(userId);
     const userObj = user.toObject();
     delete userObj.password;
 
