@@ -170,7 +170,7 @@ export const getLoginUserHolidays = async (req, res) => {
     }
     console.log("User's branch found:", loginUser.branch);
     // ✅ Find branch by code or name
-    const branch = await branchModel.findOne({ branchName: loginUser.branch });
+    const branch = await branchModel.findOne({ _id: loginUser.branch });
 
     if (!branch) {
       return res.status(404).json({
@@ -196,8 +196,6 @@ export const getLoginUserHolidays = async (req, res) => {
     });
   }
 };
-
-
 
 
 //  Edit a custom holiday
