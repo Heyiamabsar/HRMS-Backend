@@ -620,7 +620,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
     res.status(200).json({
       success: true,
       statusCode: 200,
-      message: "All users' attendance for today fetched successfully",
+      message: `All users' attendance for ${dateKey} fetched successfully`,
       date: dateKey,
       totalUsers: result.length,
       data: result
@@ -630,7 +630,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
     res.status(500).json({
       success: false,
       statusCode: 500,
-      message: "Failed to fetch all users' attendance for today",
+      message: `Failed to fetch all users' attendance for ${dateKey}`,
       error: err.message
     });
   }
