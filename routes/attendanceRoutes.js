@@ -1,5 +1,5 @@
 import express from 'express';
-import {  backFillAttendance, getAllUsersAttendanceByDate, getAllUsersAttendanceReport, getAllUsersFullAttendanceHistory, getAllUsersTodayAttendance, getLoginUserFullAttendanceHistory, getSingleUserFullAttendanceHistory, getTodayAttendance, markInTime, markOutTime } from '../controllers/attendanceController.js';
+import {  backFillAttendance, getAllUsersAttendanceByDate, getAllUsersAttendanceReport, getAllUsersFullAttendanceHistory, getAllUsersTodayAttendance, getLoginUserFullAttendanceHistory, getSingleUserAttendanceByDate, getSingleUserFullAttendanceHistory, getTodayAttendance, markInTime, markOutTime } from '../controllers/attendanceController.js';
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
 
 
@@ -9,6 +9,7 @@ attendanceRouter.post('/check_in', authenticate, authorizeRoles('admin', 'hr', '
 attendanceRouter.post('/check_out', authenticate, authorizeRoles('admin', 'hr', 'employee'), markOutTime);
 
 attendanceRouter.get('/single_user_today_attendance', authenticate, authorizeRoles('admin', 'hr', 'employee'), getTodayAttendance);
+attendanceRouter.get('/single_user_attendance_by_date', authenticate, authorizeRoles('admin', 'hr', 'employee'), getSingleUserAttendanceByDate);
 attendanceRouter.get('/login_user_attendance_history', authenticate, authorizeRoles('admin', 'hr', 'employee'), getLoginUserFullAttendanceHistory);
 attendanceRouter.get('/single_user_attendance_history/:id', authenticate, authorizeRoles('admin', 'hr', 'employee'), getSingleUserFullAttendanceHistory);
 
