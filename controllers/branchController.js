@@ -9,12 +9,12 @@ export const createBranch = async (req, res) => {
     const { branchName, country, branchCode, associatedUsers, address, timeZone, weekends } = req.body;
 
     if (!branchName || !country || !branchCode || !address ) {
-      return res.status(400).json({ success: false, message: "All fields are required." });
+      return res.status(400).json({ success: false,statusCode:400, message: "All fields are required." });
     }
 
     const existingBranch = await branchModel.findOne({ branchCode });
     if (existingBranch) {
-      return res.status(409).json({ success: false, message: "Branch with this code already exists." });
+      return res.status(409).json({ success: false,statusCode:409 ,message: "Branch with this code already exists." });
     }
 
     const newBranch = await branchModel.create({
@@ -27,7 +27,7 @@ export const createBranch = async (req, res) => {
       weekends: weekends || []
     });
 
-    res.status(201).json({ success: true, branch: newBranch });
+    res.status(201).json({ success: true, statusCode:201,message:"Branch created successfully", branch: newBranch });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error during branch creation.", error: error.message });
   }
@@ -50,7 +50,7 @@ export const getAllBranches = async (req, res) => {
       })
     );
 
-    res.status(200).json({ success: true, branches: updatedBranches });
+    res.status(200).json({ success: true,statusCode:200, message:"All branch fetch successfully",branches: updatedBranches });
   } catch (error) {
     res.status(500).json({ success: false, message: "Error fetching branches.", error: error.message });
   }
@@ -66,6 +66,8 @@ export const getBranchById = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: "Branch fetched successfully",
+      statusCode:200,
       branch: {
         ...branch.toObject(),
         associatedUsersCount: users.length,
