@@ -780,6 +780,9 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
     }
 
     const userTimeZone = user.timeZone || "UTC";
+    console.log("User TimeZone:", userTimeZone);
+console.log("Server Time Now:", moment().format());
+console.log("Today (with tz):", moment().tz(userTimeZone).startOf("day").format());
     const branchId = user.branch || null;
     if (!branchId) {
       return res.status(400).json({ success: false, message: "User branch not found" });
@@ -795,7 +798,7 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
     const branchWeekends = branch?.weekends || [];
     const joiningDate = moment(user.joining_date).startOf("day");
     const today = moment().tz(userTimeZone).startOf("day");
-console.log("branchWeekends", branchWeekends);
+
     // ✅ Fetch Attendance, Holidays (filtered by branch), and Leaves
     const attendanceRecords = await AttendanceModel.find({ userId }).lean();
 
