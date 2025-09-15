@@ -130,7 +130,7 @@ export const markInTime = async (req, res) => {
       success: false,
       statusCode: 500,
       message: "Failed to punch IN",
-      error: err.message,
+      error: err,
     });
   }
 };
@@ -282,7 +282,7 @@ export const markOutTime = async (req, res) => {
       statusCode: 200,
       message: "Punched OUT successfully",
       attendance: attendanceStatus,
-      p
+      punchedFrom,
     });
   } catch (err) {
     res.status(500).json({
