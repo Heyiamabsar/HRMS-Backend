@@ -114,6 +114,8 @@ export const markInTime = async (req, res) => {
       },
       { upsert: true, new: true }
     );
+
+    console.log('attendanceStatus',attendanceStatus)
     await attendanceStatus.save();
 
     res.status(200).json({
@@ -124,9 +126,12 @@ export const markInTime = async (req, res) => {
       punchedFrom,
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, statusCode: 500, error: err.message });
+      res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: "Failed to punch IN",
+      error: err.message,
+    });
   }
 };
 
@@ -277,12 +282,15 @@ export const markOutTime = async (req, res) => {
       statusCode: 200,
       message: "Punched OUT successfully",
       attendance: attendanceStatus,
-      punchedFrom,
+      p
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, statusCode: 500, error: err.message });
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: "Failed to punch OUT",
+      error: err.message,
+    });
   }
 };
 
