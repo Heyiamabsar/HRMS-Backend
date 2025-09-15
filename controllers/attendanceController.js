@@ -21,7 +21,9 @@ export const markInTime = async (req, res) => {
     const latitude = location?.latitude;
     const longitude = location?.longitude;
     const user = await userModel.findById(userId).populate("branch", "_id branchName");
-    const userTimeZone = user.timeZone || "UTC";
+    // const userTimeZone = user.timeZone || "UTC";
+    const userTimeZone = "UTC";
+
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
     const currentDay = moment().tz(userTimeZone).format("dddd")
     const existing = await AttendanceModel.findOne({ userId, date });
@@ -145,7 +147,9 @@ export const markOutTime = async (req, res) => {
       });
     }
 
-    const userTimeZone = req.user.timeZone || "UTC";
+    // const userTimeZone = req.user.timeZone || "UTC";
+    const userTimeZone = "UTC";
+
     const date = moment().tz(userTimeZone).format("YYYY-MM-DD");
 
     const attendance = await AttendanceModel.findOne({ userId, date });
@@ -306,7 +310,9 @@ export const getTodayAttendance = async (req, res) => {
       });
     }
 
-    const userTimeZone = user.timeZone;
+    // const userTimeZone = user.timeZone;
+    const userTimeZone = "UTC";
+
     const currentDay = moment().tz(userTimeZone).format("dddd");
 
     const branch = user.branch;
@@ -440,7 +446,9 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
       });
     }
 
-    const userTimeZone = user.timeZone;
+    // const userTimeZone = user.timeZone;
+    const userTimeZone = "UTC";
+
     const currentDay = moment().tz(userTimeZone).format("dddd");
 
     const branch = user.branch;
@@ -582,7 +590,9 @@ export const getAllUsersTodayAttendance = async (req, res) => {
 
     for (const user of users) {
       const userId = user._id.toString();
-      const userTimeZone = user?.branch?.timeZone || user?.timeZone || "UTC";
+      // const userTimeZone = user?.branch?.timeZone || user?.timeZone || "UTC";
+      const userTimeZone = "UTC";
+
       const branchWeekends = user?.branch?.weekends || [];
       const currentDay = moment().tz(userTimeZone).format("dddd");
 
@@ -695,7 +705,8 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
 
     for (const user of users) {
       const userId = user._id.toString();
-      const userTimeZone = user?.branch?.timeZone || user?.timeZone || "UTC";
+      // const userTimeZone = user?.branch?.timeZone || user?.timeZone || "UTC";
+      const userTimeZone = "UTC";
       const branchWeekends = user?.branch?.weekends || [];
       const currentDay = moment().tz(userTimeZone).format("dddd");
 
@@ -779,10 +790,9 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const userTimeZone = user.timeZone || "UTC";
-    console.log("User TimeZone:", userTimeZone);
-console.log("Server Time Now:", moment().format());
-console.log("Today (with tz):", moment().tz(userTimeZone).startOf("day").format());
+    // const userTimeZone = user.timeZone || "UTC";
+    const userTimeZone = "UTC";
+
     const branchId = user.branch || null;
     if (!branchId) {
       return res.status(400).json({ success: false, message: "User branch not found" });
@@ -892,7 +902,9 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const userTimeZone = user.timeZone || "UTC";
+    // const userTimeZone = user.timeZone || "UTC";
+    const userTimeZone = "UTC";
+
     const branchWeekends = user.branch?.weekends || [];
     const joiningDate = moment(user.joining_date).startOf("day");
     const today = moment().tz(userTimeZone).startOf("day");
@@ -994,7 +1006,9 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
 
     for (const user of users) {
       const userId = user._id.toString();
-      const userTimeZone = user.timeZone || "UTC";
+      // const userTimeZone = user.timeZone || "UTC";
+      const userTimeZone = "UTC";
+
       const branchWeekends = user.branch?.weekends || [];
       const joiningDate = moment(user.joining_date).startOf("day");
 
