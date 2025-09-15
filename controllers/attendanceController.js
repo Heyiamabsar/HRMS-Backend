@@ -289,7 +289,7 @@ export const getTodayAttendance = async (req, res) => {
     const date = moment().format("YYYY-MM-DD");
 
     // ✅ Fetch user with branch
-    const user = await userModel.findById(userId).populate("branch", "_id branchName");
+    const user = await userModel.findById(userId).populate("branch");
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -310,6 +310,7 @@ export const getTodayAttendance = async (req, res) => {
     const currentDay = moment().tz(userTimeZone).format("dddd");
 
     const branch = user.branch;
+    console.log('branch',branch)
     if (!branch) {
       return res.status(400).json({
         success: false,
