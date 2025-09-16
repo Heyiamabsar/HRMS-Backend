@@ -466,8 +466,18 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
     const userTimeZone = "UTC";
 
     const currentDay = moment().tz(userTimeZone).format("dddd");
+    
 
-    const branch = user.branch;
+
+    const userBranch = user.branch;
+    const branchId = userBranch._id;
+    const branch = await branchModel.findById({_id:user.branch._id})
+  
+    const branchWeekends = branch.weekends;
+  
+    const isWeekend = branchWeekends.includes(currentDay);
+
+
     if (!branch) {
       return res.status(400).json({
         success: false,
@@ -475,7 +485,7 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
         message: "User branch not found",
       });
     }
-
+    console.log("branch",branch)
     if (!Array.isArray(branch.weekends) || branch.weekends.length === 0) {
       return res.status(400).json({
         success: false,
@@ -484,9 +494,6 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
       });
     }
 
-    const branchId = branch._id;
-    const branchWeekends = branch.weekends;
-    const isWeekend = branchWeekends.includes(currentDay);
 
     // ✅ Check branch-specific holiday
     const holiday = await holidayModel.findOne({
@@ -506,6 +513,7 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
           inTime: null,
           outTime: null,
           status: "Holiday",
+          location: { checkIn: null, checkOut: null }
         });
       }
       return res.status(200).json({
@@ -529,6 +537,7 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
         inTime: null,
         outTime: null,
         status: isWeekend ? "Weekend" : "Absent",
+        location: { checkIn: null, checkOut: null }
       });
     } else if (
       !attendance.inTime &&
@@ -562,7 +571,7 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
     res.status(500).json({
       success: false,
       statusCode: 500,
-      message: `Failed to fetch today's attendance for ${dateKey}`,
+      message: `Failed to fetch attendance records`,
       error: err.message,
     });
   }
@@ -701,7 +710,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
   .lean();
 
 
-console.log('attendanceRecords',attendanceRecords)
+// console.log('attendanceRecords',attendanceRecords)
     // ✅ Fetch all leaves for today (approved only)
     const leaveRecords = await LeaveModel.find({
       date: dateKey,
@@ -872,7 +881,8 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
         inTime: null,
         outTime: null,
         duration: null,
-        leaveType: null
+        leaveType: null,
+        location: null
       };
 
       if (attendanceMap[dateKey]) {
@@ -932,7 +942,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 
     // ✅ Fetch Attendance, Holidays (filtered by branch), and Leaves
     const attendanceRecords = await AttendanceModel.find({ userId }).lean();
-
+    console.log('attendanceRecords',attendanceRecords)
     // const holidays = await holidayModel.find({ branch: branch._id,isOptional: false, }).sort({ date: 1 });
     // const holidayRecords = await holidayModel.find({
     //   isOptional: false,
@@ -972,7 +982,8 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
         inTime: null,
         outTime: null,
         duration: null,
-        leaveType: null
+        leaveType: null,
+        location: null
       };
 
       if (attendanceMap[dateKey]) {
