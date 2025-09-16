@@ -43,7 +43,7 @@ export const markInTime = async (req, res) => {
         message: "Location coordinates (latitude and longitude) are required.",
       });
     }
-console.log("Using User-Agent:", process.env.NOMINATION_USER_AGENT);
+    console.log("Using User-Agent:", process.env.NOMINATION_USER_AGENT);
     if (existing && existing.inTime) {
       return res.status(400).json({
         success: false,
@@ -696,10 +696,12 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
       .lean();
 
     // ✅ Fetch today's attendance for all users
-    const attendanceRecords = await AttendanceModel.find({
-      date: dateKey
-    }).lean();
+    const attendanceRecords = await AttendanceModel.find({ date: dateKey })
+  .select("userId location inTime outTime duration status")
+  .lean();
 
+
+console.log('attendanceRecords',attendanceRecords)
     // ✅ Fetch all leaves for today (approved only)
     const leaveRecords = await LeaveModel.find({
       date: dateKey,
@@ -742,13 +744,15 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
           department: user.department || null,
           designation: user.designation || null,
           salary: user.salary || null,
-          role: user.role || null
+          role: user.role || null,
+          
         },
         date: dateKey,
         inTime: null,
         outTime: null,
         duration: null,
-        status: "Absent"
+        status: "Absent",
+        location: null 
       };
 
       const att = attendanceMap[userId];
@@ -761,6 +765,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
         record.outTime = att.outTime;
         record.duration = att.duration;
         record.status = att.status || "Present";
+        record.location = att.location || null; 
 
         if (isHoliday && att.inTime && att.outTime) {
           record.status = "Over Time";
@@ -791,7 +796,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
     res.status(500).json({
       success: false,
       statusCode: 500,
-      message: `Failed to fetch all users' attendance for ${dateKey}`,
+      message: `Failed to fetch all users' attendance `,
       error: err.message
     });
   }
