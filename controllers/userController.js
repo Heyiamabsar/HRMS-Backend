@@ -6,6 +6,7 @@ import userModel from '../models/userModel.js';
 import departmentModel from '../models/departmentModel.js';
 import designationModel from '../models/designationModel.js';
 import {withoutDeletedUsers} from '../utils/commonUtils.js'
+import crypto from "crypto";
 
 // Save User Time Zone
 export const saveUserTimeZone = async (req, res) => {
