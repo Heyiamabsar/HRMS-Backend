@@ -53,18 +53,18 @@ console.log("Using User-Agent:", process.env.NOMINATION_USER_AGENT);
     }
 
 
-    // const response = await axios.get(
-    //   `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-    //   {
-    //     headers: {
-    //       "User-Agent": process.env.NOMINATION_USER_AGENT,
-    //     },
-    //   }
-    // );
-    
-    const response = await axios.get(`${process.env.SERVER_URL}/proxy/reverse-geocode`, {
-      params: { lat: latitude, lon: longitude },
-    });
+    const response = await axios.get(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+      {
+        headers: {
+          "User-Agent": process.env.NOMINATION_USER_AGENT,
+        },
+      }
+    );
+
+    // const response = await axios.get(`${process.env.SERVER_URL}/proxy/reverse-geocode`, {
+    //   params: { lat: latitude, lon: longitude },
+    // });
 
 
     console.log('response',response?.data)
