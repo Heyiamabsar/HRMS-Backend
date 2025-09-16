@@ -60,6 +60,7 @@ export const markInTime = async (req, res) => {
         },
       }
     );
+    console.log('response',response?.data)
     let address = response?.data?.address;
     const displayName = response?.data?.display_name;
     const userAgent = req.headers["user-agent"] || "";
