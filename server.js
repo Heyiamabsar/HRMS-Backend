@@ -79,9 +79,25 @@ app.use('/api/cloud_excel', cloudExcelRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/daily_reports', dailyReportRouter);
 
+
+app.get("/proxy/reverse-geocode", async (req, res) => {
+  const { lat, lon } = req.query;
+  try {
+    const response = await axios.get(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+      { headers: { "User-Agent": "MyAttendanceApp/1.0 (wd@falconmsl.com)" } }
+    );
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json({ error: "Geocoding failed", details: err.message });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("HRMS Backend is running ");
 });
+
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
