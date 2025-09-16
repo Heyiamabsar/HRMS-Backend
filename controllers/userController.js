@@ -396,14 +396,27 @@ export const deleteUser = async (req, res) => {
     const loginUserId=req.user._id
     const loginUser = await userModel.findById(loginUserId);
 
+    const userToDelete = await userModel.findById(req.params.id);
+    if (!userToDelete) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, success: false, message: "User not found" });
+    }
+
+    // Generate random 6 characters
+    const randomStr = crypto.randomBytes(3).toString("hex"); // 6 chars
+
+    // Split email into [username, domain]
+    const [username, domain] = userToDelete.email.split("@");
+    const newEmail = `${username}_${randomStr}@${domain}`;
+
     // const deletedUser = await User.findByIdAndDelete(req.params.id);
     const deletedUser = await userModel.findByIdAndUpdate(
-
       req.params.id,
-      { isDeleted: true },
+      { isDeleted: true, email: newEmail },
       { new: true }
     );
-      console.log("deletedUser",deletedUser)
+
 
     if (!deletedUser) {
       return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
