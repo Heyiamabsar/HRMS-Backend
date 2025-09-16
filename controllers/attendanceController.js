@@ -43,7 +43,7 @@ export const markInTime = async (req, res) => {
         message: "Location coordinates (latitude and longitude) are required.",
       });
     }
-
+console.log("Using User-Agent:", process.env.NOMINATION_USER_AGENT);
     if (existing && existing.inTime) {
       return res.status(400).json({
         success: false,
@@ -51,6 +51,7 @@ export const markInTime = async (req, res) => {
         message: "Already punched in today",
       });
     }
+
 
     const response = await axios.get(
       `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
