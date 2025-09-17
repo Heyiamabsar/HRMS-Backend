@@ -1,3 +1,4 @@
+import AttendanceModel from "../models/attendanceModule.js";
 import branchModel from "../models/branchModel.js";
 import holidayModel from "../models/holidayModule.js";
 import mongoose from "mongoose";
@@ -56,3 +57,26 @@ export const withoutDeletedUsers = (baseFilter = {}) => ({
   ...baseFilter,
   isDeleted: false,
 });
+
+
+export const updateHalfDayToPresent = async (req, res) => {
+  try {
+    const result = await AttendanceModel.updateMany(
+      { status: "Half Day" },         // filter
+      { $set: { status: "Present" } } // update
+    );
+
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: `${result.modifiedCount} records updated from Half day to Present`
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: "Something went wrong",
+      error: error.message
+    });
+  }
+};

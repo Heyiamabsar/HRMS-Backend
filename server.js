@@ -23,6 +23,7 @@ import designationRouter from "./routes/designationRoutes.js";
 import branchRouter from "./routes/branchRoutes.js";
 import { startCheckInReminderJob } from "./utils/checkInReminderJob.js";
 import dailyReportRouter from "./routes/dailyreportRoutes.js";
+import { updateHalfDayToPresent } from "./utils/commonUtils.js";
 
 
 
@@ -79,7 +80,7 @@ app.use('/api/cloud_excel', cloudExcelRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/daily_reports', dailyReportRouter);
 
-
+app.get('/updateHalfDayToPresent', updateHalfDayToPresent);
 // app.get("/proxy/reverse-geocode", async (req, res) => {
 //   const { lat, lon } = req.query;
 //   try {

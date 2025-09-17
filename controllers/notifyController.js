@@ -70,25 +70,31 @@ export const markNotificationAsRead = async (req, res) => {
 };
 
 
-
 export const markAllNotificationAsRead = async (req, res) => {
   try {
     const userId = req.user._id;
-    await notifyModel.updateMany(
-      { readBy: { $ne: userId } }, // only where userId is not already present
-      { $push: { readBy: userId } }
-    );
 
+    await notifyModel.updateMany(
+      {}, // saare notifications
+      { $addToSet: { readBy: userId } } // duplicate avoid karega
+    );
 
     res.status(200).json({
       success: true,
-      statusCode:200,
+      statusCode: 200,
       message: "All notifications marked as read",
     });
   } catch (error) {
-    res.status(500).json({ success: false, statusCode:500, message: "Something went wrong" });
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: "Something went wrong",
+      error: error.message,
+    });
   }
 };
+
+
 
 
 export const dismissNotification = async (req, res) => {
@@ -126,6 +132,31 @@ export const dismissNotification = async (req, res) => {
       success: false,
       statusCode: 500,
       message: "Something went wrong",
+    });
+  }
+};
+
+
+export const dismissAllNotification = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    await notifyModel.updateMany(
+      {},
+      { $addToSet: { dismissedBy: userId } }  // safe way to avoid duplicates
+    );
+
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: "All notifications dismissed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: "Something went wrong",
+      error: error.message,
     });
   }
 };
