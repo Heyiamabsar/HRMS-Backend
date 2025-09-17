@@ -89,7 +89,8 @@ export const markInTime = async (req, res) => {
     if (moment(inTime).isSameOrBefore(nineFifteen)) {
       todayStatus = "Present";
     } else {
-      todayStatus = "Half Day";
+      // todayStatus = "Half Day";
+      todayStatus = "Present";
 
       await sendNotification({
         forRoles: ["admin", "hr"],
@@ -230,10 +231,12 @@ export const markOutTime = async (req, res) => {
 
       // duration > 5 && duration < 9
       if (duration < 9) {
-        todayStatus = "Half Day";
+        // todayStatus = "Half Day";
+        todayStatus = "Present";
       }
     } else {
-      todayStatus = "Half Day";
+      // todayStatus = "Half Day";
+      todayStatus = "Present";
     }
 
     if (holiday) {
@@ -1202,7 +1205,7 @@ export const getAllUsersAttendanceReport = async (req, res) => {
       ...dateRange.map((date) => ({ header: date, key: date, width: 15 })),
       { header: "Total Present", key: "totalPresent", width: 15 },
       { header: "Total Absent", key: "totalAbsent", width: 15 },
-      { header: "Total Half Day", key: "totalHalfDay", width: 15 },
+      // { header: "Total Half Day", key: "totalHalfDay", width: 15 },
       { header: "Out of Days", key: "outOfDays", width: 15 },
     ];
 

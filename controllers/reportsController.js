@@ -119,7 +119,7 @@ export const getOverallEmployeeReport = async (req, res) => {
       { header: 'Salary Per Day', key: 'salaryPerDay', width: 15 },
       { header: 'Present Days', key: 'present', width: 15 },
       { header: 'Absent Days', key: 'absent', width: 15 },
-      { header: 'Half Days', key: 'halfDay', width: 15 },
+      // { header: 'Half Days', key: 'halfDay', width: 15 },
       { header: 'Sick Leave', key: 'sickLeave', width: 15 },
       { header: 'Unpaid Leave', key: 'unPaidLeave', width: 15 },
       { header: 'Casual Leave', key: 'casualLeave', width: 15 },
@@ -242,7 +242,7 @@ export const getAllUsersAttendanceReport = async (req, res) => {
       ...dateRange.map((date) => ({ header: date, key: date, width: 15 })),
       { header: "Total Present", key: "totalPresent", width: 15 },
       { header: "Total Absent", key: "totalAbsent", width: 15 },
-      { header: "Total Half Day", key: "totalHalfDay", width: 15 },
+      // { header: "Total Half Day", key: "totalHalfDay", width: 15 },
       { header: "Out of Days", key: "outOfDays", width: 15 },
     ];
 

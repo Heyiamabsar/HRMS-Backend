@@ -23,10 +23,12 @@ export const formatAttendanceRecord =async (record) => {
     } else if (outTime) {
       const duration = moment.duration(outTime.diff(inTime)).asHours();
       if (duration < 9) {
-        todayStatus = 'Half Day';
+        // todayStatus = 'Half Day';
+        todayStatus = "Present";
                 }
               } else {
-                todayStatus = 'Half Day';
+                // todayStatus = 'Half Day';
+                todayStatus = "Present";
               } 
 
     // if (hours >= 9 && inTime.isSameOrBefore(cutoffTime)) {
