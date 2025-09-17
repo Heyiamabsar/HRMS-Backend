@@ -67,7 +67,7 @@ export const markInTime = async (req, res) => {
     // });
 
 
-    console.log('response',response?.data)
+    // console.log('response',response?.data)
     let address = response?.data?.address;
     const displayName = response?.data?.display_name;
     const userAgent = req.headers["user-agent"] || "";
@@ -110,6 +110,7 @@ export const markInTime = async (req, res) => {
       {
         $set: {
           inTime,
+          outTime: null,
           status: todayStatus,
           "location.checkIn": {
             latitude,
@@ -652,9 +653,9 @@ export const getAllUsersTodayAttendance = async (req, res) => {
       const isWeekend = branchWeekends.includes(currentDay);
 
       if (att) {
-        record.inTime = att.inTime;
-        record.outTime = att.outTime;
-        record.duration = att.duration;
+        record.inTime = att.inTime || null;
+        record.outTime = att.outTime  || null;
+        record.duration = att.duration || null;
         record.status = att.status || "Present";
 
         if (isHoliday && att.inTime && att.outTime) {
