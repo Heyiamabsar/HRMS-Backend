@@ -94,9 +94,9 @@ app.get('/updateHalfDayToPresent', updateHalfDayToPresent);
 //   }
 // });
 
-// app.get("/", (req, res) => {
-//   res.send("HRMS Backend is running ");
-// });
+app.get("/", (req, res) => {
+  res.send("HRMS Backend is running ");
+});
 
 
 

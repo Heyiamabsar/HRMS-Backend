@@ -74,6 +74,35 @@ export const handleFileUpload = async (req, res) => {
 };
 
 
+// controllers/userController.js
+export const uploadProfileImage = async (req, res) => {
+  try {
+    const userId = req.user._id; // login user
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    // Cloudinary response se url nikal lo
+    const imageUrl = req.file.path; // multer-storage-cloudinary already deta hai
+
+    // User ke profileImageUrl ko update karo
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      { profileImageUrl: imageUrl },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Profile image updated successfully",
+      profileImageUrl: updatedUser.profileImageUrl,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to upload profile image", error: error.message });
+  }
+};
+
+
 export const getAllUploads = async (req, res) => {
   try {
     const uploads = await UploadModel.find().populate('user');
@@ -186,6 +215,7 @@ export const updateUploadById = async (req, res) => {
   try {
     const uploadId = req.params.id;
     const { title } = req.body;
+    console.log("Files to update:", req.files);
     const loginUser = await userModel.findById(req.user._id);
 
     const upload = await UploadModel.findById(uploadId);

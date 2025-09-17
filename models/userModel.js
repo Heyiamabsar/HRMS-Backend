@@ -91,11 +91,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Designation is required"],
     },
-branch: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "Branch",
-  required: false
-},
+    branch: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      required: false
+    },
     joining_date: {
       type: Date,
       required: [true, "Joining date is required"],
@@ -127,6 +127,7 @@ branch: {
       ifscCode: String,
       UNA: Number,
     },
+    profileImageUrl: { type: String, default: "" }
   },
   {
     timestamps: true,

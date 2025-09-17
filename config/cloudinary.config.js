@@ -13,6 +13,7 @@ cloudinary.config({
 });
 const allowedFormats = [
   "jpg",
+  "jpeg",
   "png",
   "mp4",
   "pdf",
@@ -62,4 +63,23 @@ const storage = new CloudinaryStorage({
   },
 });
 
-export { cloudinary, storage };
+// storage for profile pic
+const profilePicStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    const ext = path.extname(file.originalname).replace(".", "").toLowerCase();
+    const isAllowed = ["jpg", "jpeg", "png"].includes(ext);
+    if (!isAllowed) throw new Error(`File format ${ext} not allowed`);
+
+    return {
+      folder: "profile_pics",
+      resource_type: "image",
+      public_id: `profile_${req.user._id}`, // userId se naam unique hoga
+      overwrite: true,
+      invalidate: true,
+    };
+  },
+});
+
+
+export { cloudinary, storage, profilePicStorage};
