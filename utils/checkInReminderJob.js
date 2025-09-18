@@ -37,7 +37,7 @@ export const startCheckInReminderJob = async () => {
       if (testMode || reminderCounts[userId] < 4) {
         setTimeout(async () => {
           const sent = await sendReminderEmails(user);
-          console.log(`📧 [${new Date().toLocaleTimeString()}] Preparing to send mail to ${user.email}`);
+          // console.log(`📧 [${new Date().toLocaleTimeString()}] Preparing to send mail to ${user.email}`);
           if (sent && !testMode) reminderCounts[userId]++;
         }, index * 5000);
       }

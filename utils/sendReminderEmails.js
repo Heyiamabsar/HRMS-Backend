@@ -11,7 +11,7 @@ const sendReminderEmails = async (user) => {
       userId: user._id,
       date: currentDate,
     }).lean();
-      console.log(`[DEBUG] Check-in Time for ${user.email}:`, attendance);
+      // console.log(`[DEBUG] Check-in Time for ${user.email}:`, attendance);
     if (!attendance || !attendance.inTime) {
 
       const isBefore9 = currentTime < nineAM;
@@ -30,9 +30,9 @@ const sendReminderEmails = async (user) => {
         subject,
         text,
       };
-      console.log("🕒 Now:", currentTime.toLocaleString());
-      console.log("⏰ 9 AM IST:", nineAM.toLocaleString());
-      console.log("⏳ isBefore9:", isBefore9);
+      // console.log("🕒 Now:", currentTime.toLocaleString());
+      // console.log("⏰ 9 AM IST:", nineAM.toLocaleString());
+      // console.log("⏳ isBefore9:", isBefore9);
       const info = await transporter.sendMail(mailOptions);
 
       console.log(

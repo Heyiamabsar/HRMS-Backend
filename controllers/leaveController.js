@@ -83,21 +83,21 @@ export const applyLeave = async (req, res) => {
     });
 
 
-    // await sendNotification({
-    //   forRoles: ["admin", "hr"],
-    //   title: "New Leave Request",
-    //   message: `${user.first_name} ${user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
-    //   link: `/leave`,
-    //   type: "user",
-    //   performedBy: user._id,
-    // });
-    // await sendNotification({
-    //   userId: user._id,
-    //   title: "Leave Request Submitted",
-    //   message: `Your leave request from ${leave.fromDate} to ${leave.toDate} has been submitted.`,
-    //   link: `/leavestatus`,
-    //   type: "user",
-    // });
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "New Leave Request",
+      message: `${user.first_name} ${user.last_name}  requested leave from ${leave.fromDate} to ${leave.toDate}`,
+      link: `/leave`,
+      type: "user",
+      performedBy: user._id,
+    });
+    await sendNotification({
+      userId: user._id,
+      title: "Leave Request Submitted",
+      message: `Your leave request from ${leave.fromDate} to ${leave.toDate} has been submitted.`,
+      link: `/leavestatus`,
+      type: "user",
+    });
 
 
     res.status(201).json({
@@ -340,9 +340,23 @@ export const updateLeaveStatus = async (req, res) => {
 export const getAllLeavesStatus = async (req, res) => {
   try {
     const leaves = await LeaveModel.find()
-      .populate("employee", "first_name last_name email")
+      .populate({
+        path: "employee",
+        select: "first_name last_name email",
+        match: { isDeleted: false }, 
+      })
       .sort({ createdAt: -1 })
       .lean();
+
+      const filteredLeaves = leaves.filter((leave) => leave.employee !== null);
+
+      if (!filteredLeaves || filteredLeaves.length === 0) {
+      return res.status(404).json({
+        success: false,
+        statusCode: 404,
+        message: "No leaves found for active users.",
+      });
+    }
 
     if (!leaves || leaves.length === 0) {
       return res
@@ -354,9 +368,10 @@ export const getAllLeavesStatus = async (req, res) => {
       success: true,
       statusCode: 200,
       message: "Leaves fetched successfully.",
-      count: leaves.length,
-      data: leaves,
+      count: filteredLeaves.length,
+      data: filteredLeaves,
     });
+    
   } catch (error) {
     res.status(500).json({
       success: false,

@@ -48,14 +48,14 @@ export const handleFileUpload = async (req, res) => {
       select: '_id name email role' 
     });
 
-    await sendNotification({
-      forRoles: ["admin", "hr"],
-      title: "New Files Uploaded",
-      message: `${loginUser.first_name} ${loginUser.last_name} uploaded ${req.files.length} file(s): "${newUpload.title}"`,
-      // link: `/uploads/${savedUpload._id}`,
-      type: "admin",
-      performedBy: loginUser._id
-    });
+    // await sendNotification({
+    //   forRoles: ["admin", "hr"],
+    //   title: "New Files Uploaded",
+    //   message: `${loginUser.first_name} ${loginUser.last_name} uploaded ${req.files.length} file(s): "${newUpload.title}"`,
+    //   // link: `/uploads/${savedUpload._id}`,
+    //   type: "admin",
+    //   performedBy: loginUser._id
+    // });
 
     res.status(200).json({
       _id: savedUpload._id,
@@ -82,10 +82,8 @@ export const uploadProfileImage = async (req, res) => {
       return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
-    // Cloudinary response se url nikal lo
-    const imageUrl = req.file.path; // multer-storage-cloudinary already deta hai
+    const imageUrl = req.file.path;
 
-    // User ke profileImageUrl ko update karo
     const updatedUser = await userModel.findByIdAndUpdate(
       userId,
       { profileImageUrl: imageUrl },
@@ -160,14 +158,14 @@ export const deleteUpload = async (req, res) => {
       return res.status(404).json({ success: false, statusCode: 404, error: 'Upload not found' });
     }
 
-      await sendNotification({
-      forRoles: ["admin", "hr"],
-      title: "File Upload Deleted",
-      message: `${loginUser.first_name} ${loginUser.last_name} deleted uploaded files titled "${upload.title}"`,
-      // link: `/uploads`,
-      type: "admin",
-      performedBy: loginUser._id
-    });
+    //   await sendNotification({
+    //   forRoles: ["admin", "hr"],
+    //   title: "File Upload Deleted",
+    //   message: `${loginUser.first_name} ${loginUser.last_name} deleted uploaded files titled "${upload.title}"`,
+    //   // link: `/uploads`,
+    //   type: "admin",
+    //   performedBy: loginUser._id
+    // });
 
     res.status(200).json({ success: true, statusCode: 200, message: 'Upload deleted successfully' });
   } catch (error) {
