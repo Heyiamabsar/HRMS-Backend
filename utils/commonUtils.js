@@ -2,6 +2,7 @@ import AttendanceModel from "../models/attendanceModule.js";
 import branchModel from "../models/branchModel.js";
 import holidayModel from "../models/holidayModule.js";
 import mongoose from "mongoose";
+import LeaveModel from "../models/leaveModel.js";
 
 export const getBranchHolidaysForUser = async (user) => {
   try {
@@ -80,3 +81,19 @@ export const updateHalfDayToPresent = async (req, res) => {
     });
   }
 };
+
+export const calculateLeaveBalance = async (employeeId) => {
+  const existingLeaves = await LeaveModel.find({
+    employee: employeeId,
+    status: "approved",
+    leaveType: { $in: ["casual", "vacation", "firstHalf", "secondHalf"] },
+  });
+
+  const totalLeaveTaken = existingLeaves.reduce(
+    (acc, l) => acc + l.leaveTaken,
+    0
+  );
+
+  return 14 - totalLeaveTaken;
+};
+

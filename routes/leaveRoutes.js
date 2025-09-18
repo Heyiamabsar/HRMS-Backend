@@ -2,6 +2,7 @@
 import express from 'express';
 import {
   applyLeave,
+  cancelLeaveByUser,
   getAllLeavesStatus,
   getAllUsersLeaveReport,
   getLeavesByUserId,
@@ -17,6 +18,7 @@ leaveRouter.get('/my_leaves', authenticate,  authorizeRoles('admin', 'hr', 'empl
 
 leaveRouter.get('/', authenticate,  authorizeRoles('admin', 'hr'), getAllLeavesStatus);
 leaveRouter.get('/leaves_byId/:id', authenticate,  authorizeRoles('admin', 'hr'), getLeavesByUserId);
+leaveRouter.put('/cancel_leave_by_user/:leaveId', authenticate,  authorizeRoles('admin', 'hr', 'employee'), cancelLeaveByUser);
 leaveRouter.put('/update_leave/:id', authenticate,  authorizeRoles('admin', 'hr'), updateLeaveStatus);
 
 leaveRouter.get('/all_user_leave_report', authenticate,  authorizeRoles('admin', 'hr'), getAllUsersLeaveReport);

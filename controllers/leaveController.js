@@ -6,6 +6,7 @@ import ExcelJS from "exceljs";
 
 import moment from "moment-timezone";
 import { sendNotification } from "../utils/notificationutils.js";
+import { calculateLeaveBalance } from "../utils/commonUtils.js";
 
 export const applyLeave = async (req, res) => {
   try {
@@ -13,24 +14,24 @@ export const applyLeave = async (req, res) => {
     const userId = req.user?._id;
     const user = await userModel.findById(userId);
 
-    const existingLeaves = await LeaveModel.find({
+    const start = new Date(fromDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(toDate);
+    end.setHours(23, 59, 59, 999);
+
+    let leaveBalance = await calculateLeaveBalance(userId);
+    const sickLeaveCount = await LeaveModel.countDocuments({
       employee: userId,
       status: "approved",
-      leaveType: { $in: ["casual", "vacation", "firstHalf", "secondHalf"] },
+      leaveType: "sick",
     });
 
-      let leaveBalance = 14 - existingLeaves.length;
-      const sickLeaveCount = await LeaveModel.countDocuments({
-        employee: userId,
-        status: "approved",
-        leaveType: "sick",
-      });
-
-      const unpaidLeaveCount = await LeaveModel.countDocuments({
-        employee: userId,
-        status: "approved",
-        leaveType: "unpaid",
-      });
+    const unpaidLeaveCount = await LeaveModel.countDocuments({
+      employee: userId,
+      status: "approved",
+      leaveType: "unpaid",
+    });
 
     const leaveDays =
       Math.ceil(
@@ -38,27 +39,24 @@ export const applyLeave = async (req, res) => {
       ) + 1;
 
 
-        const isCasualOrVacation = ["casual", "vacation"].includes(leaveType);
-        const isHalfDay = ["firstHalf", "secondHalf"].includes(leaveType);
-        const deduction = isHalfDay ? 0.5 : leaveDays;
+    const isCasualOrVacation = ["casual", "vacation"].includes(leaveType);
+    const isHalfDay = ["firstHalf", "secondHalf"].includes(leaveType);
+    const deduction = isHalfDay ? 0.5 : leaveDays;
 
-        if ((isCasualOrVacation || isHalfDay) && leaveBalance < deduction) {
-          return res.status(400).json({
-            success: false,
-            statusCode: 400,
-            message: "Insufficient leave balance",
-          });
-        }
+    if ((isCasualOrVacation || isHalfDay) && leaveBalance < deduction) {
+      return res.status(400).json({
+        success: false,
+        statusCode: 400,
+        message: "Insufficient leave balance",
+      });
+    }
     const overlappingLeave = await LeaveModel.findOne({
-      userId,
+      employee: userId,
       status: "approved",
-      $or: [
-        {
-          fromDate: { $lte: toDate },
-          toDate: { $gte: fromDate },
-        },
-      ],
+      fromDate: { $lte: end },
+      toDate: { $gte: start },
     });
+
 
     if (overlappingLeave) {
       return res.status(400).json({
@@ -74,10 +72,10 @@ export const applyLeave = async (req, res) => {
       fromDate,
       toDate,
       reason,
-      sickLeave :sickLeaveCount,
-      unPaidLeave :unpaidLeaveCount,
+      sickLeave: sickLeaveCount,
+      unPaidLeave: unpaidLeaveCount,
       leaveBalance,
-      leaveTaken: leaveDays,
+      leaveTaken: deduction,
       maximumLeave: 14,
       status: "pending",
     });
@@ -149,40 +147,41 @@ export const updateLeaveStatus = async (req, res) => {
       });
     }
 
-    const existingLeaves = await LeaveModel.find({
-      employee: leave.employee,
-      status: "approved",
-      leaveType: { $in: ["casual", "vacation"] },
-    });
 
-      const totalLeaveTaken = existingLeaves.reduce(
-        (acc, l) => acc + l.leaveTaken,
-        0
-      );
+    let leaveBalance = await calculateLeaveBalance(userId);
 
-      let leaveBalance = 14 - totalLeaveTaken;
 
-      if (
-        ["casual", "vacation", "firstHalf", "secondHalf"].includes(leave.leaveType)
-      ) {
-          const isHalfDay = ["firstHalf", "secondHalf"].includes(leave.leaveType);
-          const deduction = isHalfDay ? 0.5 : leave.leaveTaken;
+    if (
+      ["casual", "vacation", "firstHalf", "secondHalf"].includes(leave.leaveType)
+    ) {
+      const isHalfDay = ["firstHalf", "secondHalf"].includes(leave.leaveType);
+      const deduction = isHalfDay ? 0.5 : leave.leaveTaken;
 
-        if ((["casual", "vacation"].includes(leave.leaveType) || isHalfDay) && leaveBalance < deduction) {
-          return res.status(400).json({
-            success: false,
-            statusCode: 400,
-            message: "Insufficient leave balance for this leave type",
-          });
-        }
-
-        if (["casual", "vacation"].includes(leave.leaveType)) {
-          leave.leaveBalance = leaveBalance - deduction;
-        }
+      if ((["casual", "vacation"].includes(leave.leaveType) || isHalfDay) && leaveBalance < deduction) {
+        return res.status(400).json({
+          success: false,
+          statusCode: 400,
+          message: "Insufficient leave balance for this leave type",
+        });
       }
+
+      if (["casual", "vacation"].includes(leave.leaveType)) {
+        leave.leaveBalance = leaveBalance - deduction;
+      }
+    }
 
     // APPROVE CASE
     if (status === "approved" && leave.status !== "approved") {
+
+        const today = new Date();
+          today.setHours(0, 0, 0, 0); // normalize today
+          if (leave.toDate < today) {
+            return res.status(400).json({
+              success: false,
+              statusCode: 400,
+              message: "Cannot approve a leave for past dates",
+            });
+          }
 
       if (["casual", "vacation"].includes(leave.leaveType)) {
         leave.leaveBalance = leaveBalance - leave.leaveTaken;
@@ -301,22 +300,22 @@ export const updateLeaveStatus = async (req, res) => {
     await user.save();
     await leave.save();
 
-    // await sendNotification({
-    //   userId: leave.employee,
-    //   title: `Your Leave Status Updated`,
-    //   message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
-    //   link: `/leavestatus`,
-    //   type: "admin",
-    //   performedBy: req.user._id,
-    // });
-    // await sendNotification({
-    //   forRoles: ["admin", "hr"],
-    //   title: `${loginUser.first_name} ${loginUser.last_name}'s Leave Status Updated`,
-    //   message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
-    //   link: `/leave`,
-    //   type: "admin",
-    //   performedBy: req.user._id,
-    // });
+    await sendNotification({
+      userId: leave.employee,
+      title: `Your Leave Status Updated`,
+      message: `Your leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
+      link: `/leavestatus`,
+      type: "admin",
+      performedBy: req.user._id,
+    });
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: `${loginUser.first_name} ${loginUser.last_name}'s Leave Status Updated`,
+      message: `Leave from ${leave.fromDate} to ${leave.toDate} has been ${status} by ${loginUser.first_name} ${loginUser.last_name}`,
+      link: `/leave`,
+      type: "admin",
+      performedBy: req.user._id,
+    });
 
 
     res.status(200).json({
@@ -337,20 +336,137 @@ export const updateLeaveStatus = async (req, res) => {
   }
 };
 
+export const cancelLeaveByUser = async (req, res) => {
+  try {
+    const leaveId = req.params.leaveId;
+    const userId = req.user._id;
+
+    // Get leave
+    const leave = await LeaveModel.findById(leaveId);
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: "Leave not found",
+      });
+    }
+
+    // Check if leave belongs to this user
+    if (leave.employee.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You can cancel only your own leaves",
+      });
+    }
+
+    // Leave already started?
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Deadline = fromDate - 1 day
+    const cancelDeadline = new Date(leave.fromDate);
+    cancelDeadline.setDate(cancelDeadline.getDate() - 1);
+    cancelDeadline.setHours(23, 59, 59, 999);
+
+    if (today > cancelDeadline) {
+      return res.status(400).json({
+        success: false,
+        message: "You can cancel leave only till one day before it starts",
+      });
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isHalfDay =
+      leave.leaveType === "firstHalf" || leave.leaveType === "secondHalf";
+
+    // ✅ Attendance reset karna
+    const dates = [];
+    for (
+      let date = moment(leave.fromDate);
+      date.isSameOrBefore(leave.toDate);
+      date.add(1, "days")
+    ) {
+      dates.push(date.format("YYYY-MM-DD"));
+    }
+
+    await Promise.all(
+      dates.map((date) =>
+        AttendanceModel.updateOne(
+          {
+            date,
+            userId: leave.employee,
+            status: isHalfDay
+              ? { $in: ["First Half Leave", "Second Half Leave"] }
+              : "Leave",
+          },
+          { $set: { status: "" } }
+        )
+      )
+    );
+
+    // ✅ Balance reversal
+    if (["casual", "vacation", "firstHalf", "secondHalf"].includes(leave.leaveType)) {
+      const updatedBalance = await calculateLeaveBalance(userId);
+      user.leaveBalance = updatedBalance;
+      leave.leaveBalance = updatedBalance;
+    } else if (leave.leaveType === "sick") {
+      user.sickLeaves = Math.max(0, (user.sickLeaves || 0) - (isHalfDay ? 0.5 : leave.leaveTaken));
+      leave.sickLeave = user.sickLeaves;
+    } else if (["LOP", "unpaid"].includes(leave.leaveType)) {
+      user.unpaidLeaves = Math.max(0, (user.unpaidLeaves || 0) - (isHalfDay ? 0.5 : leave.leaveTaken));
+      leave.unPaidLeave = user.unpaidLeaves;
+    }
+
+    // ✅ Update status
+    leave.status = "cancelled by user";
+
+    await user.save();
+    await leave.save();
+
+    await sendNotification({
+      forRoles: ["admin", "hr"],
+      title: "Leave Cancelled",
+      message: `${user.first_name} ${user.last_name} cancelled their leave from ${leave.fromDate} to ${leave.toDate}`,
+      link: `/leave`,
+      type: "user",
+      performedBy: user._id,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Leave cancelled successfully",
+      data: leave,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel leave",
+      error: error.message,
+    });
+  }
+};
+
+
 export const getAllLeavesStatus = async (req, res) => {
   try {
     const leaves = await LeaveModel.find()
       .populate({
         path: "employee",
         select: "first_name last_name email",
-        match: { isDeleted: false }, 
+        match: { isDeleted: false },
       })
       .sort({ createdAt: -1 })
       .lean();
 
-      const filteredLeaves = leaves.filter((leave) => leave.employee !== null);
+    const filteredLeaves = leaves.filter((leave) => leave.employee !== null);
 
-      if (!filteredLeaves || filteredLeaves.length === 0) {
+    if (!filteredLeaves || filteredLeaves.length === 0) {
       return res.status(404).json({
         success: false,
         statusCode: 404,
@@ -371,7 +487,7 @@ export const getAllLeavesStatus = async (req, res) => {
       count: filteredLeaves.length,
       data: filteredLeaves,
     });
-    
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -467,7 +583,6 @@ export const getLoginUserAllLeaves = async (req, res) => {
     });
   }
 };
-
 
 export const getAllUsersLeaveReport = async (req, res) => {
   try {
