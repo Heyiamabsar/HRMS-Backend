@@ -53,8 +53,8 @@ export const saveUserTimeZone = async (req, res) => {
 // Get All Users
 export const getAllUsers = async (req, res) => {
   try {
-    const filter =withoutDeletedUsers(req.user.role === 'hr' ? { role: 'employee' } : { role: { $in: ['employee', 'hr', 'admin'] } }) 
-    const users = await User.find(filter).populate("branch", "_id branchName").select('-password -__v');
+    const filter =withoutDeletedUsers(req.user.role === 'hr' ? { role: { $in: ['employee', 'hr'] } } : { role: { $in: ['employee', 'hr', 'admin'] } }) 
+    const users = await User.find(withoutDeletedUsers()).populate("branch", "_id branchName").select('-password -__v');
 
 
 
