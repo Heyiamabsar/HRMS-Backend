@@ -10,7 +10,7 @@ import path from "path";
 import fs from "fs";
 import { sendNotification } from "../utils/notificationutils.js";
 import branchModel from "../models/branchModel.js";
-import { getBranchHolidaysForUser } from "../utils/commonUtils.js";
+import { getBranchHolidaysForUser, withoutDeletedUsers } from "../utils/commonUtils.js";
 import userModel from "../models/userModel.js";
 
 // Punch IN
@@ -589,7 +589,7 @@ export const getAllUsersTodayAttendance = async (req, res) => {
     const dateKey = today.format("YYYY-MM-DD");
 
     // ✅ Fetch all users (active only if needed)
-    const users = await userModel.find()
+    const users = await userModel.find(withoutDeletedUsers())
       .populate({ path: "branch", select: "weekends timeZone" })
       .lean();
 
