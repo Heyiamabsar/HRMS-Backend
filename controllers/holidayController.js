@@ -6,6 +6,7 @@ import { sendNotification } from "../utils/notificationutils.js";
 import userModel from "../models/userModel.js";
 import branchModel from "../models/branchModel.js"
 import { withoutDeletedUsers } from "../utils/commonUtils.js";
+import notifyModel from "../models/notifyModel.js";
 
 
 
