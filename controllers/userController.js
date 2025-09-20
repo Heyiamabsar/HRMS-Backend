@@ -5,7 +5,7 @@ import { sendNotification } from '../utils/notificationutils.js';
 import userModel from '../models/userModel.js';
 import departmentModel from '../models/departmentModel.js';
 import designationModel from '../models/designationModel.js';
-import {withoutDeletedUsers} from '../utils/commonUtils.js'
+import { withoutDeletedUsers } from '../utils/commonUtils.js'
 import crypto from "crypto";
 
 // Save User Time Zone
@@ -53,10 +53,15 @@ export const saveUserTimeZone = async (req, res) => {
 // Get All Users
 export const getAllUsers = async (req, res) => {
   try {
-    const filter =withoutDeletedUsers(req.user.role === 'hr' ? { role: { $in: ['employee', 'hr'] } } : { role: { $in: ['employee', 'hr', 'admin'] } }) 
-    const users = await User.find(withoutDeletedUsers()).populate("branch", "_id branchName").select('-password -__v');
+    const { page = 1, limit = 15 } = req.query;
+    const filter = withoutDeletedUsers(req.user.role === 'hr' ? { role: { $in: ['employee', 'hr'] } } : { role: { $in: ['employee', 'hr', 'admin'] } })
+    const users = await User.find(withoutDeletedUsers()).populate("branch", "_id branchName")
+      .select("-password -__v")
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
 
-
+    const total = await User.countDocuments(withoutDeletedUsers());
 
     // console.log("Fetched Users:", users);
     res.status(200).json({
@@ -65,6 +70,9 @@ export const getAllUsers = async (req, res) => {
       message: 'Users fetched successfully',
       data: {
         count: users.length,
+        totalRecords: total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: Number(page),
         users,
       },
     });
@@ -75,13 +83,18 @@ export const getAllUsers = async (req, res) => {
 
 export const getAllDeletedUsers = async (req, res) => {
   try {
-      const baseFilter =
+    const { page = 1, limit = 15 } = req.query;
+    const baseFilter =
       req.user.role === 'hr'
         ? { role: 'employee' }
         : { role: { $in: ['employee', 'hr', 'admin'] } };
 
-    const filter = { ...baseFilter, isDeleted: true };
-    const users = await User.find(filter).select('-password -__v');
+    const filter = { isDeleted: true };
+    const users = await User.find(filter).select('-password -__v').skip((page - 1) * limit)
+      .limit(Number(limit));
+
+
+    const total = await User.countDocuments({ isDeleted: true });
 
     // console.log("Fetched Users:", users);
     res.status(200).json({
@@ -90,6 +103,9 @@ export const getAllDeletedUsers = async (req, res) => {
       message: 'Deleted users fetched successfully',
       data: {
         count: users.length,
+        totalRecords: total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: Number(page),
         users,
       },
     });
@@ -104,11 +120,11 @@ export const getUserById = async (req, res) => {
     const user = await User.findById(req.params.id).select('-password -__v');
 
     if (!user) {
-      return res.status(404).json({ statusCode: 404, success: false ,message: 'User not found' });
+      return res.status(404).json({ statusCode: 404, success: false, message: 'User not found' });
     }
 
     if (req.user.role === 'hr' && user.role !== 'employee') {
-      return res.status(403).json({ statusCode: 403, success: false,  message: 'Access denied' });
+      return res.status(403).json({ statusCode: 403, success: false, message: 'Access denied' });
     }
 
     res.status(200).json({
@@ -118,7 +134,7 @@ export const getUserById = async (req, res) => {
       data: user,
     });
   } catch (error) {
-    res.status(500).json({ statusCode: 500, success: false,  message: 'Failed to fetch user', error: error.message });
+    res.status(500).json({ statusCode: 500, success: false, message: 'Failed to fetch user', error: error.message });
   }
 };
 
@@ -333,8 +349,8 @@ export const updateUserPassword = async (req, res) => {
   try {
     const { password } = req.body;
 
-    	const loginUserId=req.user._id
- 	const loginUser = await userModel.findById(loginUserId);
+    const loginUserId = req.user._id
+    const loginUser = await userModel.findById(loginUserId);
 
     if (!password) {
       return res.status(400).json({
@@ -375,7 +391,7 @@ export const updateUserPassword = async (req, res) => {
     });
 
 
-   return res.status(200).json({
+    return res.status(200).json({
       statusCode: 200,
       success: true,
       message: 'Password updated successfully',
@@ -394,7 +410,7 @@ export const updateUserPassword = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
 
-    const loginUserId=req.user._id
+    const loginUserId = req.user._id
     const loginUser = await userModel.findById(loginUserId);
 
     const userToDelete = await userModel.findById(req.params.id);
@@ -442,7 +458,7 @@ export const deleteUser = async (req, res) => {
 
     res.status(200).json({ statusCode: 200, success: true, message: 'User deleted successfully' });
   } catch (error) {
-    res.status(500).json({ statusCode: 500,success: false,  message: 'Failed to delete user', error: error.message });
+    res.status(500).json({ statusCode: 500, success: false, message: 'Failed to delete user', error: error.message });
   }
 };
 
