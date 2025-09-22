@@ -541,6 +541,7 @@ export const getLeavesByUserId = async (req, res) => {
 
 export const getLoginUserAllLeaves = async (req, res) => {
   try {
+    const { page = 1, limit = 15 } = req.query;
     if (!req.user || !req.user?._id) {
       return res.status(400).json({
         success: false,

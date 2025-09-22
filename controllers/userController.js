@@ -53,14 +53,14 @@ export const saveUserTimeZone = async (req, res) => {
 // Get All Users
 export const getAllUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 15 } = req.query;
+    // const { page = 1, limit = 15 } = req.query;
     const filter = withoutDeletedUsers(req.user.role === 'hr' ? { role: { $in: ['employee', 'hr'] } } : { role: { $in: ['employee', 'hr', 'admin'] } })
     const users = await User.find(withoutDeletedUsers()).populate("branch", "_id branchName")
       .select("-password -__v")
-      .skip((page - 1) * limit)
-      .limit(Number(limit))
       .lean();
-
+      
+      // .skip((page - 1) * limit)
+      // .limit(Number(limit))
     const total = await User.countDocuments(withoutDeletedUsers());
 
     // console.log("Fetched Users:", users);
@@ -71,8 +71,8 @@ export const getAllUsers = async (req, res) => {
       data: {
         count: users.length,
         totalRecords: total,
-        totalPages: Math.ceil(total / limit),
-        currentPage: Number(page),
+        // totalPages: Math.ceil(total / limit),
+        // currentPage: Number(page),
         users,
       },
     });
@@ -83,15 +83,16 @@ export const getAllUsers = async (req, res) => {
 
 export const getAllDeletedUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 15 } = req.query;
+    // const { page = 1, limit = 15 } = req.query;
     const baseFilter =
       req.user.role === 'hr'
         ? { role: 'employee' }
         : { role: { $in: ['employee', 'hr', 'admin'] } };
 
     const filter = { isDeleted: true };
-    const users = await User.find(filter).select('-password -__v').skip((page - 1) * limit)
-      .limit(Number(limit));
+    const users = await User.find(filter).select('-password -__v')
+      // .skip((page - 1) * limit)
+      // .limit(Number(limit));
 
 
     const total = await User.countDocuments({ isDeleted: true });
@@ -104,8 +105,8 @@ export const getAllDeletedUsers = async (req, res) => {
       data: {
         count: users.length,
         totalRecords: total,
-        totalPages: Math.ceil(total / limit),
-        currentPage: Number(page),
+        // totalPages: Math.ceil(total / limit),
+        // currentPage: Number(page),
         users,
       },
     });

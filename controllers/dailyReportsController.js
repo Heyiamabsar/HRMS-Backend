@@ -292,9 +292,6 @@ export const getSingleUserReports = async (req, res) => {
 };
 
 
-
-
-
 export const deleteDailyReportTask = async (req, res) => {
   try {
     const { reportId, taskIndex } = req.params;
