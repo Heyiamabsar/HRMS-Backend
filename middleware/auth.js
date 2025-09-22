@@ -58,7 +58,7 @@ export const authorizeRoles = (...roles) => {
           message: 'User not found',
         });
       }
-
+console.log("LoginUser.role",LoginUser.role)
       // SuperAdmin bypass
       if (LoginUser.role === 'superAdmin') {
         return next();

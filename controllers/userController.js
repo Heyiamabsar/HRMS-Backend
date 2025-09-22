@@ -52,12 +52,12 @@ export const saveUserTimeZone = async (req, res) => {
 // Get All Users
 export const getAllUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 15 } = req.query;
+    // const { page = 1, limit = 15 } = req.query;
     const filter = withoutDeletedUsers(req.user.role === 'hr' ? { role: { $in: ['employee', 'hr'] } } : { role: { $in: ['employee', 'hr', 'admin'] } })
     const users = await User.find(withoutDeletedUsers()).populate("branch", "_id branchName")
       .select("-password -__v")
-      .skip((page - 1) * limit)
-      .limit(Number(limit))
+      // .skip((page - 1) * limit)
+      // .limit(Number(limit))
       .lean();
       
     const total = await User.countDocuments(withoutDeletedUsers());
@@ -69,9 +69,9 @@ export const getAllUsers = async (req, res) => {
       message: 'Users fetched successfully',
       data: {
         count: users.length,
-        totalRecords: total,
-        totalPages: Math.ceil(total / limit),
-        currentPage: Number(page),
+        // totalRecords: total,
+        // totalPages: Math.ceil(total / limit),
+        // currentPage: Number(page),
         users,
       },
     });
