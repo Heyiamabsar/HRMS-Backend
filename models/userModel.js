@@ -134,6 +134,15 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+userSchema.index({
+  first_name: "text",
+  last_name: "text",
+  email: "text",
+  department: "text",
+  designation: "text"
+});
+
+
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 

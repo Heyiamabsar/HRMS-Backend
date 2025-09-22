@@ -49,7 +49,6 @@ export const saveUserTimeZone = async (req, res) => {
   }
 };
 
-
 // Get All Users
 export const getAllUsers = async (req, res) => {
   try {
@@ -83,7 +82,7 @@ export const getAllUsers = async (req, res) => {
 
 export const getAllDeletedUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 15 } = req.query;
+    // const { page = 1, limit = 15 } = req.query;
     const baseFilter =
       req.user.role === 'hr'
         ? { role: 'employee' }
@@ -91,8 +90,8 @@ export const getAllDeletedUsers = async (req, res) => {
 
     const filter = { isDeleted: true };
     const users = await User.find(filter).select('-password -__v')
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+      // .skip((page - 1) * limit)
+      // .limit(Number(limit));
 
 
     const total = await User.countDocuments({ isDeleted: true });
@@ -105,8 +104,8 @@ export const getAllDeletedUsers = async (req, res) => {
       data: {
         count: users.length,
         totalRecords: total,
-        totalPages: Math.ceil(total / limit),
-        currentPage: Number(page),
+        // totalPages: Math.ceil(total / limit),
+        // currentPage: Number(page),
         users,
       },
     });
@@ -344,8 +343,7 @@ export const updateProfileBySelf = async (req, res) => {
   }
 };
 
-
-
+// Update User Password
 export const updateUserPassword = async (req, res) => {
   try {
     const { password } = req.body;
@@ -543,5 +541,40 @@ export const addIsDeletedField = async (req, res) => {
       message: "Migration failed",
       error: error.message
     });
+  }
+};
+
+
+
+export const getSearchUsers = async (req, res) => {
+  try {
+    const { page = 1, limit = 15, search = "" } = req.query;
+
+    // Search filter
+    const searchFilter = search ? { $text: { $search: search } } : {};
+    // Exclude deleted users
+    Object.assign(searchFilter, { isDeleted: false });  
+
+    // Total count (for pagination)
+    const totalUsers = await userModel.countDocuments(searchFilter);
+
+    // Users fetch with pagination
+    const users = await userModel
+      .find(searchFilter, { score: { $meta: "textScore" } })
+      .sort({ score: { $meta: "textScore" } }) 
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+
+    res.status(200).json({
+      success: true,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: Number(page),
+      users,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

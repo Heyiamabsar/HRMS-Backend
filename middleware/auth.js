@@ -40,7 +40,7 @@ export const authorizeRoles = (...roles) => {
   return async (req, res, next) => {
     try {
       //  console.log("!req?.user",!req?.user)
-      //  console.log("!req?.user?._id",!req?.user?._id)
+       console.log("!req?.user?.role",!req?.user?.role)
        
       if (!req?.user || !req?.user?._id) {
         return res.status(401).json({
@@ -48,6 +48,20 @@ export const authorizeRoles = (...roles) => {
           statusCode: 401,
           message: 'Unauthorized: User not authenticated',
         });
+      }
+
+            const LoginUser = await userModel.findById(withoutDeletedUsers({ _id: req.user._id })).select('role');
+      if (!LoginUser) {
+        return res.status(404).json({
+          success: false,
+          statusCode: 404,
+          message: 'User not found',
+        });
+      }
+
+      // SuperAdmin bypass
+      if (LoginUser.role === 'superAdmin') {
+        return next();
       }
 
       const user = await userModel.findById(withoutDeletedUsers({ _id: req.user._id })).select('role');
