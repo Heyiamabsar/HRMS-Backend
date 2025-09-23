@@ -1,20 +1,40 @@
 import AttendanceModel from "../models/attendanceModule.js";
 import { transporter } from "./emailTransporter.js";
+import moment from "moment-timezone";
 
 const sendReminderEmails = async (user) => {
   try {
-    const currentDate = new Date().toISOString().split("T")[0];
-    const currentTime = new Date();
-    const nineAM = new Date(`${currentDate}T09:00:00+05:30`);
+
+    if (!user.timeZone) {
+      console.log(`⏭️ Skipping ${user.email} | No timeZone set`);
+      return false;
+    }
+
+    // const currentDate = new Date().toISOString().split("T")[0];
+    // const currentTime = new Date();
+    // const nineAM = new Date(`${currentDate}T09:00:00+05:30`);
+
+    const currentTime = moment().tz(user.timeZone);
+    const currentDate = currentTime.format("YYYY-MM-DD");
+    const nineAM = moment.tz(`${currentDate} 09:00:00`, "YYYY-MM-DD HH:mm:ss", user.timeZone);
+
+    // Mail window: 5 min pehle se 15 min baad
+    if (!currentTime.isBetween(nineAM.clone().subtract(5, 'minutes'), nineAM.clone().add(15, 'minutes'))) {
+      console.log(`⏭️ Skipping ${user.email} | Not in 9 AM window (${user.timeZone})`);
+      return false;
+    }
+
+    const isBefore9 = currentTime.isBefore(nineAM);
+
+    console.log(`User: ${user.email}, Timezone: ${user.timeZone}, Current Time: ${currentTime.format()}, Before 9 AM? ${isBefore9}`);
+
 
     const attendance = await AttendanceModel.findOne({
       userId: user._id,
       date: currentDate,
     }).lean();
-      // console.log(`[DEBUG] Check-in Time for ${user.email}:`, attendance);
+    // console.log(`[DEBUG] Check-in Time for ${user.email}:`, attendance);
     if (!attendance || !attendance.inTime) {
-
-      const isBefore9 = currentTime < nineAM;
 
       const subject = isBefore9
         ? "Reminder: Do not forget to do your check-in"
@@ -30,9 +50,7 @@ const sendReminderEmails = async (user) => {
         subject,
         text,
       };
-      // console.log("🕒 Now:", currentTime.toLocaleString());
-      // console.log("⏰ 9 AM IST:", nineAM.toLocaleString());
-      // console.log("⏳ isBefore9:", isBefore9);
+
       const info = await transporter.sendMail(mailOptions);
 
       console.log(
