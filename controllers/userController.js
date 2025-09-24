@@ -59,7 +59,7 @@ export const getAllUsers = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .lean();
-      
+
     const total = await User.countDocuments(withoutDeletedUsers());
 
     // console.log("Fetched Users:", users);
@@ -90,8 +90,8 @@ export const getAllDeletedUsers = async (req, res) => {
 
     const filter = { isDeleted: true };
     const users = await User.find(filter).select('-password -__v')
-      // .skip((page - 1) * limit)
-      // .limit(Number(limit));
+    // .skip((page - 1) * limit)
+    // .limit(Number(limit));
 
 
     const total = await User.countDocuments({ isDeleted: true });
@@ -553,7 +553,7 @@ export const getSearchUsers = async (req, res) => {
     // Search filter
     const searchFilter = search ? { $text: { $search: search } } : {};
     // Exclude deleted users
-    Object.assign(searchFilter, { isDeleted: false });  
+    Object.assign(searchFilter, { isDeleted: false });
 
     // Total count (for pagination)
     const totalUsers = await userModel.countDocuments(searchFilter);
@@ -561,10 +561,14 @@ export const getSearchUsers = async (req, res) => {
     // Users fetch with pagination
     const users = await userModel
       .find(searchFilter, { score: { $meta: "textScore" } })
-      .sort({ score: { $meta: "textScore" } }) 
+      .sort({ score: { $meta: "textScore" } })
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .lean();
+      .populate({
+        path: "branch",      
+        select: "branchName _id",  
+      })
+      .lean()
 
 
     res.status(200).json({
