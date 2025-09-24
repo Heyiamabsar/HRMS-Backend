@@ -12,6 +12,7 @@ import { sendNotification } from "../utils/notificationutils.js";
 import branchModel from "../models/branchModel.js";
 import { getBranchHolidaysForUser, withoutDeletedUsers } from "../utils/commonUtils.js";
 import userModel from "../models/userModel.js";
+import { count } from "console";
 
 // Punch IN
 export const markInTime = async (req, res) => {
@@ -81,7 +82,7 @@ export const markInTime = async (req, res) => {
       punchedFrom = "Web";
     }
 
-    let todayStatus;
+    let todayStatus = "Absent"; 
     const inTime = moment().tz(userTimeZone).toDate();
     const nineFifteen = moment(`${date} 09:15 AM`, "YYYY-MM-DD hh:mm A").tz(
       userTimeZone
@@ -95,11 +96,10 @@ export const markInTime = async (req, res) => {
       await sendNotification({
         forRoles: ["admin", "hr"],
         title: "Late Punch IN Alert",
-        message: `${user.first_name} ${
-          user.last_name
-        } Logged in late today at ${moment(inTime)
-          .tz(userTimeZone)
-          .format("hh:mm AM")}`,
+        message: `${user.first_name} ${user.last_name
+          } Logged in late today at ${moment(inTime)
+            .tz(userTimeZone)
+            .format("hh:mm AM")}`,
         link: `/attendance`,
         type: "user",
         performedBy: user._id,
@@ -112,7 +112,9 @@ export const markInTime = async (req, res) => {
         $set: {
           inTime,
           outTime: null,
-          status: todayStatus,
+          status: todayStatus || "Absent",
+          userName: `${user.first_name} ${user.last_name}`,
+          userEmail: user.email,
           "location.checkIn": {
             latitude,
             longitude,
@@ -125,7 +127,7 @@ export const markInTime = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    console.log('attendanceStatus',attendanceStatus)
+    console.log('attendanceStatus', attendanceStatus)
     await attendanceStatus.save();
 
     res.status(200).json({
@@ -136,7 +138,7 @@ export const markInTime = async (req, res) => {
       punchedFrom,
     });
   } catch (err) {
-      res.status(500).json({
+    res.status(500).json({
       success: false,
       statusCode: 500,
       message: "Failed to punch IN",
@@ -222,7 +224,7 @@ export const markOutTime = async (req, res) => {
       punchedFrom = "Web";
     }
 
-    let todayStatus;
+    let todayStatus = "Absent";
     if (inTime.isSameOrBefore(nineFifteen)) {
       todayStatus = "Present";
     } else if (outTime) {
@@ -274,7 +276,9 @@ export const markOutTime = async (req, res) => {
       { userId, date },
       {
         $set: {
-          status: todayStatus,
+          status: todayStatus || "Absent",
+          userName: `${user.first_name} ${user.last_name}`,   // 👈 add
+          userEmail: user.email,
           "location.checkOut": {
             latitude,
             longitude,
@@ -336,7 +340,7 @@ export const getTodayAttendance = async (req, res) => {
     const currentDay = moment().tz(userTimeZone).format("dddd");
 
     const branch = user.branch;
-    console.log('branch',branch)
+    console.log('branch', branch)
     if (!branch) {
       return res.status(400).json({
         success: false,
@@ -470,15 +474,15 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
     const userTimeZone = "UTC";
 
     const currentDay = moment().tz(userTimeZone).format("dddd");
-    
+
 
 
     const userBranch = user.branch;
     const branchId = userBranch._id;
-    const branch = await branchModel.findById({_id:user.branch._id})
-  
+    const branch = await branchModel.findById({ _id: user.branch._id })
+
     const branchWeekends = branch.weekends;
-  
+
     const isWeekend = branchWeekends.includes(currentDay);
 
 
@@ -489,7 +493,7 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
         message: "User branch not found",
       });
     }
-    console.log("branch",branch)
+    console.log("branch", branch)
     if (!Array.isArray(branch.weekends) || branch.weekends.length === 0) {
       return res.status(400).json({
         success: false,
@@ -562,7 +566,7 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
     res.status(200).json({
       success: true,
       statusCode: 200,
-      message:  `Attendance for ${dateKey} fetched successfully`,
+      message: `Attendance for ${dateKey} fetched successfully`,
       date: dateKey,
       attendance,
       branch: {
@@ -657,7 +661,7 @@ export const getAllUsersTodayAttendance = async (req, res) => {
 
       if (att) {
         record.inTime = att.inTime || null;
-        record.outTime = att.outTime  || null;
+        record.outTime = att.outTime || null;
         record.duration = att.duration || null;
         record.status = att.status || "Present";
 
@@ -680,6 +684,7 @@ export const getAllUsersTodayAttendance = async (req, res) => {
     res.status(200).json({
       success: true,
       statusCode: 200,
+      count: result.length,
       message: "All users' attendance for today fetched successfully",
       date: dateKey,
       totalUsers: result.length,
@@ -704,17 +709,17 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
     const dateKey = targetDate.format("YYYY-MM-DD");
 
     // ✅ Fetch all users (active only if needed)
-    const users = await userModel.find()
+    const users = await userModel.find(withoutDeletedUsers())
       .populate({ path: "branch", select: "weekends timeZone" })
       .lean();
 
     // ✅ Fetch today's attendance for all users
     const attendanceRecords = await AttendanceModel.find({ date: dateKey })
-  .select("userId location inTime outTime duration status")
-  .lean();
+      .select("userId location inTime outTime duration status")
+      .lean();
 
 
-// console.log('attendanceRecords',attendanceRecords)
+    // console.log('attendanceRecords',attendanceRecords)
     // ✅ Fetch all leaves for today (approved only)
     const leaveRecords = await LeaveModel.find({
       date: dateKey,
@@ -758,14 +763,14 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
           designation: user.designation || null,
           salary: user.salary || null,
           role: user.role || null,
-          
+
         },
         date: dateKey,
         inTime: null,
         outTime: null,
         duration: null,
         status: "Absent",
-        location: null 
+        location: null
       };
 
       const att = attendanceMap[userId];
@@ -778,7 +783,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
         record.outTime = att.outTime;
         record.duration = att.duration;
         record.status = att.status || "Present";
-        record.location = att.location || null; 
+        record.location = att.location || null;
 
         if (isHoliday && att.inTime && att.outTime) {
           record.status = "Over Time";
@@ -799,6 +804,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
     res.status(200).json({
       success: true,
       statusCode: 200,
+      count: result.length,
       message: `All users' attendance for ${dateKey} fetched successfully`,
       date: dateKey,
       totalUsers: result.length,
@@ -834,11 +840,11 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
     const branch = await branchModel.findById(branchId);
     if (!branch) {
       return res.status(400).json({ success: false, message: "Branch not found" });
-    } 
+    }
 
     if (!Array.isArray(branch.weekends) || branch.weekends.length === 0) {
       return res.status(400).json({ success: false, message: "Branch weekends not configured. Please update branch settings." });
-    } 
+    }
     const branchWeekends = branch?.weekends || [];
     const joiningDate = moment(user.joining_date).startOf("day");
     const today = moment().tz(userTimeZone).startOf("day");
@@ -915,6 +921,7 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      count: fullHistory.length,
       message: "Full Attendance History fetched successfully",
       data: fullHistory
     });
@@ -946,7 +953,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 
     // ✅ Fetch Attendance, Holidays (filtered by branch), and Leaves
     const attendanceRecords = await AttendanceModel.find({ userId }).lean();
-    console.log('attendanceRecords',attendanceRecords)
+    console.log('attendanceRecords', attendanceRecords)
     // const holidays = await holidayModel.find({ branch: branch._id,isOptional: false, }).sort({ date: 1 });
     // const holidayRecords = await holidayModel.find({
     //   isOptional: false,
@@ -1016,6 +1023,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      count: fullHistory.length,
       message: "Full Attendance History fetched successfully",
       data: fullHistory
     });
@@ -1032,7 +1040,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 
 export const getAllUsersFullAttendanceHistory = async (req, res) => {
   try {
-    const users = await userModel.find()
+    const users = await userModel.find(withoutDeletedUsers())
       .populate({ path: "branch", select: "weekends" })
       .lean();
 
@@ -1075,7 +1083,7 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
       let attendanceCount = 0;
       let current = joiningDate.clone();
 
-   while (current.isSameOrBefore(today)) {
+      while (current.isSameOrBefore(today)) {
         attendanceCount++;
         current.add(1, "day");
       }
@@ -1099,6 +1107,7 @@ export const getAllUsersFullAttendanceHistory = async (req, res) => {
     res.status(200).json({
       success: true,
       statusCode: 200,
+      count: result.length,
       message: "All users' full attendance history fetched successfully",
       data: result
     });
@@ -1154,13 +1163,13 @@ export const getAllUsersAttendanceReport = async (req, res) => {
         $lte: formattedEnd,
       },
     }).populate({
-        path: "userId",
-        select: "first_name last_name email status timeZone branch",
-        populate: {
-          path: "branch",
-          select: "weekends",
-        },
-      });
+      path: "userId",
+      select: "first_name last_name email status timeZone branch",
+      populate: {
+        path: "branch",
+        select: "weekends",
+      },
+    });
 
     const userMap = new Map();
 
@@ -1271,126 +1280,6 @@ export const getAllUsersAttendanceReport = async (req, res) => {
 };
 
 
-// Get all users' full attendance history
-// export const getAllUsersFullAttendanceHistory = async (req, res) => {
-//   try {
-//     const records = await AttendanceModel.find().populate(
-//       "userId",
-//       "first_name last_name email phone joining_date department designation salary role userId"
-//     );;
-//     const users = await userModel.find({});
-
-//     const attendanceByUser = {};
-
-//     records.forEach((recordDoc) => {
-//       const isWeekend = moment(recordDoc.date).day() === 0;
-//       if (
-//         !recordDoc.inTime &&
-//         !recordDoc.outTime &&
-//         (recordDoc.status === "Absent" || !recordDoc.status)
-//       ) {
-//         recordDoc.status = isWeekend ? "Weekend" : "Absent";
-//         recordDoc.save(); // No need to await inside forEach
-//       }
-//       if (!recordDoc.userId) return;
-
-//       const user = users.find(
-//         (u) => u._id?.toString() === recordDoc.userId?.toString()
-//       );
-//       if (!user) return;
-
-//       const record = recordDoc.toObject();
-//       const userIdStr = user._id.toString();
-
-//       if (!attendanceByUser[userIdStr]) {
-//         attendanceByUser[userIdStr] = {
-//           userId: userIdStr,
-//           empId: user?.userId,
-//           userName: `${user.first_name} ${user.last_name}`,
-//           userEmail: user.email,
-//           userPhone: user.phone,
-//           joining_date: user.joining_date,
-//           department: user.department,
-//           designation: user.designation,
-//           salary: user.salary,
-//           role: user.role,
-//           attendanceHistory: [],
-//         };
-//       }
-
-//       attendanceByUser[userIdStr].attendanceHistory.push(record);
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       statusCode: 200,
-//       message: "All users' attendance history fetched successfully",
-//       data: Object.values(attendanceByUser), // Convert to array if needed
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       statusCode: 500,
-//       message: "Error fetching full attendance history",
-//       error: error.message,
-//     });
-//   }
-// };
-
-
-
-// export const migrateStringDatesToDateType = async (req, res) => {
-//   try {
-//     // Count records with string-type date
-//     const beforeCount = await AttendanceModel.countDocuments({
-//       date: { $type: "string" },
-//     });
-
-//     console.log("Before migration - String type date count:", beforeCount);
-
-//     if (beforeCount === 0) {
-//       return res.status(200).json({
-//         success: true,
-//         message: "No string-type date records found. Migration not needed.",
-//       });
-//     }
-
-//     // Perform the migration
-//     const result = await AttendanceModel.updateMany(
-//       { date: { $type: "string" } },
-//       [
-//         {
-//           $set: {
-//             date: { $toDate: "$date" },
-//           },
-//         },
-//       ]
-//     );
-
-//     // Count after migration
-//     const afterCount = await AttendanceModel.countDocuments({
-//       date: { $type: "date" },
-//     });
-
-//     console.log("After migration - Date type count:", afterCount);
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Migration completed successfully.",
-//       stringDatesBefore: beforeCount,
-//       properDatesAfter: afterCount,
-//       modifiedCount: result.modifiedCount,
-//     });
-//   } catch (error) {
-//     console.error("Migration Error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Migration failed",
-//       error: error.message,
-//     });
-//   }
-// };
-
 
 export const backFillAttendance = async (req, res) => {
   try {
@@ -1483,5 +1372,71 @@ export const backFillAttendance = async (req, res) => {
       success: false,
       message: error.message
     });
+  }
+};
+
+
+
+export const migrateAttendanceWithUserData = async (req, res) => {
+  try {
+    // ✅ Attendance records jisme user info missing hai
+    const attendances = await AttendanceModel.find({
+      $or: [{ userName: { $exists: false } }, { userEmail: { $exists: false } }]
+    }).populate("userId", "first_name last_name email");
+
+    let updatedCount = 0;
+
+    for (const att of attendances) {
+      if (att.userId) {
+        att.userName = `${att.userId.first_name} ${att.userId.last_name}`;
+        att.userEmail = att.userId.email;
+        await att.save();
+        updatedCount++;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Attendance records updated with user info",
+      updatedCount
+    });
+  } catch (error) {
+    console.error("Migration Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating attendance with user info",
+      error: error.message
+    });
+  }
+};
+
+
+export const findInvalidAttendanceStatus = async () => {
+  try {
+    const validStatuses = ['Present', 'Absent', 'Leave', 'Half Day', 'Weekend', 'Over Time', 'Holiday'];
+
+    // Invalid status wale attendance records fetch karte hain
+    const invalidRecords = await AttendanceModel.find({
+      $or: [
+        { status: { $exists: false } },
+        { status: { $eq: "" } },
+        { status: { $nin: validStatuses } },
+      ],
+    }).populate("userId", "first_name last_name email");
+
+    console.log("Invalid Attendance Records:", invalidRecords.length);
+    invalidRecords.forEach(att => {
+      console.log({
+        _id: att._id,
+        userId: att.userId?._id,
+        status: att.status,
+        date: att.date
+      });
+    });
+
+    return invalidRecords;
+  } catch (err) {
+    console.error(err);
+    return [];
   }
 };

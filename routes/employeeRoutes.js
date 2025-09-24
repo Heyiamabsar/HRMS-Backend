@@ -1,6 +1,7 @@
 import express from 'express';
-import { deleteUser, getAllDeletedUsers,addIsDeletedField, getAllDepartments, getAllDesignations, getAllUsers, getDashboard, getUserById, saveUserTimeZone, updateProfileBySelf, updateUser, updateUserPassword, updateUserRole, getSearchUsers } from '../controllers/userController.js';
+import { deleteUser, getAllDeletedUsers,addIsDeletedField, getAllDepartments, getAllDesignations, getAllUsers, getDashboard, getUserById, saveUserTimeZone, updateProfileBySelf, updateUser, updateUserPassword, updateUserRole } from '../controllers/userController.js';
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
+import { getSearchUsers } from '../controllers/searchController.js';
 const employeeRouter = express.Router();
 
 // employeeRouter.get('/dashboard', authenticate, getDashboard);

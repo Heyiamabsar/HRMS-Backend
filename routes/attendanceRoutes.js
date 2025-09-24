@@ -1,12 +1,17 @@
 import express from 'express';
-import {  backFillAttendance, getAllUsersAttendanceByDate, getAllUsersAttendanceReport, getAllUsersFullAttendanceHistory, getAllUsersTodayAttendance, getLoginUserFullAttendanceHistory, getSingleUserAttendanceByDate, getSingleUserFullAttendanceHistory, getTodayAttendance, markInTime, markOutTime } from '../controllers/attendanceController.js';
+import {  backFillAttendance, findInvalidAttendanceStatus, getAllUsersAttendanceByDate, getAllUsersAttendanceReport, getAllUsersFullAttendanceHistory, getAllUsersTodayAttendance, getLoginUserFullAttendanceHistory, getSingleUserAttendanceByDate, getSingleUserFullAttendanceHistory, getTodayAttendance, markInTime, markOutTime, migrateAttendanceWithUserData } from '../controllers/attendanceController.js';
 import { authenticate, authorizeRoles } from '../middleware/auth.js';
+import { getSearchAttendanceUsers } from '../controllers/searchController.js';
 
 
 const attendanceRouter = express.Router();
 
 attendanceRouter.post('/check_in', authenticate, authorizeRoles('admin', 'hr', 'employee'), markInTime);
 attendanceRouter.post('/check_out', authenticate, authorizeRoles('admin', 'hr', 'employee'), markOutTime);
+
+// attendanceRouter.get('/migrateAttendanceWithUserData', migrateAttendanceWithUserData);
+// attendanceRouter.get('/findInvalidAttendanceStatus', findInvalidAttendanceStatus);
+attendanceRouter.get('/search', getSearchAttendanceUsers);
 
 attendanceRouter.get('/single_user_today_attendance', authenticate, authorizeRoles('admin', 'hr', 'employee'), getTodayAttendance);
 attendanceRouter.get('/single_user_attendance_by_date', authenticate, authorizeRoles('admin', 'hr', 'employee'), getSingleUserAttendanceByDate);
