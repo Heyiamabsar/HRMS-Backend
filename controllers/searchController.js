@@ -142,7 +142,10 @@ export const getSearchLeaveUsers = async (req, res) => {
         empId: user.userId,
         userName: `${user.first_name} ${user.last_name}`,
         userEmail: user.email,
-        branch: user.branch?.branchName || null,
+        department: user.department || null,
+        designation: user.designation || null,
+        role: user?.role || null,
+        branch: user?.branch?.branchName || null,
         totalLeaves: leaveCount,
       });
     }
