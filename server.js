@@ -36,6 +36,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:8081",
   "https://hrms-frontend-git-dev-falcon-infotechs-projects.vercel.app",
   "https://hrms-frontend-amber.vercel.app",
   "http://pc80w8o0g00s80ksoggc4s84.43.204.178.166.sslip.io"
