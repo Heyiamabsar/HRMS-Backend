@@ -18,6 +18,12 @@ const sendReminderEmails = async (user) => {
     const currentDate = currentTime.format("YYYY-MM-DD");
     const nineAM = moment.tz(`${currentDate} 09:00:00`, "YYYY-MM-DD HH:mm:ss", user.timeZone);
 
+    console.log({
+      user: user.email,
+      localTime: currentTime.format(),
+      nineAMWindow: nineAM.clone().subtract(5, 'minutes').format() + " - " + nineAM.clone().add(15, 'minutes').format()
+    });
+
     // Mail window: 5 min pehle se 15 min baad
     if (!currentTime.isBetween(nineAM.clone().subtract(5, 'minutes'), nineAM.clone().add(15, 'minutes'))) {
       console.log(`⏭️ Skipping ${user.email} | Not in 9 AM window (${user.timeZone})`);

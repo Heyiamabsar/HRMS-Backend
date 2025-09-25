@@ -1,83 +1,79 @@
+// startCheckInReminderJob.js
 import cron from "node-cron";
+import moment from "moment-timezone";
 import sendReminderEmails from "./sendReminderEmails.js";
 import userModel from "../models/userModel.js";
 import AttendanceModel from "../models/attendanceModule.js";
 import { transporter } from "./emailTransporter.js";
 import { skipEmails, withoutDeletedUsers } from "./commonUtils.js";
 
-const testMode = process.env.TEST_MODE === "true";
-const reminderCounts = {};
+const reminderTracker = {}; // track last reminder sent per user
 
 export const startCheckInReminderJob = async () => {
-  transporter.verify((err, success) => {
-    if (err) {
-      console.error("❌ SMTP verification failed:", err.message);
-    } else {
-      console.log("✅ SMTP connection ready");
-    }
+  // Verify SMTP
+  transporter.verify((err) => {
+    if (err) console.error("❌ SMTP verification failed:", err.message);
+    else console.log("✅ SMTP connection ready");
   });
 
   const sendReminders = async () => {
     console.log(`🕐 Running check-in reminder job...`);
 
-    // const users = await userModel.find({ role: { $in: ["employee", "hr"] } });
-    const users = await userModel.find(withoutDeletedUsers({ role: { $in: ["employee", "hr", "admin", 'superAdmin'] } }));
+    const users = await userModel.find(
+      withoutDeletedUsers({ role: { $in: ["employee", "hr", "admin", "superAdmin"] } })
+    );
 
-    console.log(`Found ${users.length} users to send reminders`);
+    console.log(`Found ${users.length} users to check reminders`);
 
-    //   for (const [index, user] of users.entries()) {
-    //       if (skipEmails.includes(user.email)) {
-    //   console.log(`⏭️ Skipping reminder for ${user.email}`);
-    //   continue;
-    // }
-    for (const [index, user] of users.entries()) {
+    for (const user of users) {
       if (!user.timeZone) {
-        console.log(`⏭️ Skipping ${user.email} (no timeZone set)`);
+        console.log(`⏭️ Skipping ${user.email} | No timeZone set`);
         continue;
       }
 
       if (skipEmails.includes(user.email)) {
-        console.log(`⏭️ Skipping reminder for ${user.email}`);
+        console.log(`⏭️ Skipping ${user.email} | In skipEmails list`);
         continue;
       }
 
       const userId = user._id.toString();
 
-      if (!reminderCounts[userId]) reminderCounts[userId] = 0;
+      // Current time in user's timezone
+      const currentTime = moment().tz(user.timeZone);
+      const currentDate = currentTime.format("YYYY-MM-DD");
+      const nineAM = moment.tz(`${currentDate} 09:00:00`, "YYYY-MM-DD HH:mm:ss", user.timeZone);
 
-      // if (testMode || reminderCounts[userId] < 4) {
-      //   setTimeout(async () => {
-      //     const sent = await sendReminderEmails(user);
-      //     // console.log(`📧 [${new Date().toLocaleTimeString()}] Preparing to send mail to ${user.email}`);
-      //     if (sent && !testMode) reminderCounts[userId]++;
-      //   }, index * 5000);
-      // }
+      const windowStart = nineAM.clone().subtract(10, "minutes");
+      const windowEnd = nineAM.clone().add(15, "minutes");
 
+      console.log({
+        user: user.email,
+        localTime: currentTime.format(),
+        nineAMWindow: windowStart.format() + " - " + windowEnd.format(),
+      });
 
-      if (testMode || reminderCounts[userId] < 4) {
-        const sent = await sendReminderEmails(user);
-        if (sent && !testMode) reminderCounts[userId]++;
+      // Skip if not in 9 AM window
+      if (!currentTime.isBetween(windowStart, windowEnd, null, "[)")) {
+        console.log(`⏭️ Skipping ${user.email} | Not in 9 AM window (${user.timeZone})`);
+        continue;
       }
 
+      // Skip if reminder already sent in this window
+      if (reminderTracker[userId]) {
+        const lastSent = reminderTracker[userId];
+        if (currentTime.diff(lastSent, "minutes") < 20) {
+          console.log(`⏭️ Skipping ${user.email} | Reminder already sent in this window`);
+          continue;
+        }
+      }
+
+      const sent = await sendReminderEmails(user);
+      if (sent) reminderTracker[userId] = currentTime;
     }
   };
 
-  if (testMode) {
-    console.log("✅ Running in TEST mode - Cron every 2 min");
-    cron.schedule("*/2 * * * *", sendReminders, {
-      timeZone: "Asia/Kolkata",
-    });
-  } else {
-    console.log("✅ Running in PROD mode - Scheduled reminders");
-    // 8:30, 8:40, 8:50
-    // cron.schedule("45,55 8 * * *", sendReminders, {
-    //   timeZone: "Asia/Kolkata",
-    // });
+  // Cron schedule: every 1 min (safer for window precision)
+  cron.schedule("*/1 * * * *", sendReminders, { timezone: "UTC" });
 
-    // // 9:00, 9:10, 9:20
-    // cron.schedule("10,20 9 * * *", sendReminders, {
-    //   timeZone: "Asia/Kolkata",
-    // });
-    cron.schedule("*/5 * * * *", sendReminders, { timezone: "Asia/Kolkata" });
-  }
+  console.log("✅ Check-in reminder cron job started (AWS UTC server)");
 };

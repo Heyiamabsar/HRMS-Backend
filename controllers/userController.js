@@ -89,7 +89,10 @@ export const getAllDeletedUsers = async (req, res) => {
         : { role: { $in: ['employee', 'hr', 'admin'] } };
 
     const filter = { isDeleted: true };
-    const users = await User.find(filter).select('-password -__v')
+    const users = await User.find(filter).populate({
+        path: "branch",      
+        select: "branchName _id",  
+      }).select('-password -__v')
     // .skip((page - 1) * limit)
     // .limit(Number(limit));
 
