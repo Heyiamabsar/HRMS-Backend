@@ -1,6 +1,7 @@
 import moment from "moment";
 import AttendanceModel from "../models/attendanceModule.js";
 import userModel from "../models/userModel.js";
+import LeaveModel from "../models/leaveModel.js";
 
 
 
@@ -99,6 +100,65 @@ export const getSearchAttendanceUsers = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching users with attendance summary",
+      error: error.message,
+    });
+  }
+};
+
+
+export const getSearchLeaveUsers = async (req, res) => {
+  try {
+    const { page = 1, limit = 15, search = "" } = req.query;
+
+    // User filter
+    let userFilter = { isDeleted: false };
+
+    if (search) {
+      userFilter.$or = [
+        { first_name: { $regex: search, $options: "i" } },
+        { last_name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { userId: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Total users count
+    const totalUsers = await userModel.countDocuments(userFilter);
+
+    // Users fetch with pagination
+    const users = await userModel.find(userFilter)
+      .populate({ path: "branch", select: "branchName _id" })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+
+    const result = [];
+
+    for (const user of users) {
+      const leaveCount = await LeaveModel.countDocuments({ userId: user._id });
+
+      result.push({
+        userId: user._id,
+        empId: user.userId,
+        userName: `${user.first_name} ${user.last_name}`,
+        userEmail: user.email,
+        branch: user.branch?.branchName || null,
+        totalLeaves: leaveCount,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: Number(page),
+      users: result,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching users with leave summary",
       error: error.message,
     });
   }

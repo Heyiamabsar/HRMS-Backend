@@ -25,8 +25,13 @@ const leaveSchema = new mongoose.Schema({
   leaveTaken: { type: Number, required: true, default: 0 },
   leaveBalance: { type: Number, required: true  , default: 14 },
 
+  userName: { type: String },
+  userEmail: { type: String },
+
   appliedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
+
+leaveSchema.index({ userName: "text", userEmail: "text" });
 
  const LeaveModel = mongoose.model('Leave', leaveSchema);
 
