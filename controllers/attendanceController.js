@@ -624,7 +624,7 @@ export const getAllUsersTodayAttendance = async (req, res) => {
     for (const user of users) {
       const userId = user._id.toString();
       // const userTimeZone = user?.branch?.timeZone || user?.timeZone || "UTC";
-      const userTimeZone = "UTC";
+      const userTimeZone = user?.timeZone || "UTC";
 
       const branchWeekends = user?.branch?.weekends || [];
       const currentDay = moment().tz(userTimeZone).format("dddd");
@@ -742,9 +742,12 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
     for (const user of users) {
       const userId = user._id.toString();
       // const userTimeZone = user?.branch?.timeZone || user?.timeZone || "UTC";
-      const userTimeZone = "UTC";
+      const userTimeZone = user.timeZone || "UTC";
       const branchWeekends = user?.branch?.weekends || [];
-      const currentDay = moment().tz(userTimeZone).format("dddd");
+     const selectedDay = targetDate.clone().tz(userTimeZone).format("dddd");
+     console.log('user',user.first_name,user.last_name)
+      console.log('selectedDay',selectedDay)
+      console.log('branchWeekends',branchWeekends)
 
       // ✅ Get branch-specific holidays
       const holidays = await getBranchHolidaysForUser(user);
@@ -776,7 +779,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
       const att = attendanceMap[userId];
       const leave = leaveMap[userId];
       const isHoliday = holidayMap[dateKey] ? true : false;
-      const isWeekend = branchWeekends.includes(currentDay);
+      const isWeekend = branchWeekends.includes(selectedDay);
 
       if (att) {
         record.inTime = att.inTime;
