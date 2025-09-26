@@ -21,7 +21,8 @@ export const startCheckInReminderJob = async () => {
 
     const users = await userModel.find(
       withoutDeletedUsers({ role: { $in: ["employee", "hr", "admin", "superAdmin"] } })
-    );
+    )
+      .populate({ path: "branch", select: "weekends branchName" }); // branch ke weekends fetch karo
 
     console.log(`Found ${users.length} users to check reminders`);
 
@@ -36,6 +37,15 @@ export const startCheckInReminderJob = async () => {
         continue;
       }
 
+      // ✅ Weekend check
+      if (user.branch?.weekends?.length) {
+        const currentDay = moment().tz(user.timeZone).format("dddd"); // Example: Sunday
+        if (user.branch.weekends.includes(currentDay)) {
+          console.log(`⏭️ Skipping ${user.email} | Today is weekend (${currentDay}) for branch ${user.branch.branchName}`);
+          continue;
+        }
+      }
+
       const userId = user._id.toString();
 
       // Current time in user's timezone
@@ -46,11 +56,11 @@ export const startCheckInReminderJob = async () => {
       const windowStart = nineAM.clone().subtract(10, "minutes");
       const windowEnd = nineAM.clone().add(15, "minutes");
 
-      console.log({
-        user: user.email,
-        localTime: currentTime.format(),
-        nineAMWindow: windowStart.format() + " - " + windowEnd.format(),
-      });
+      // console.log({
+      //   user: user.email,
+      //   localTime: currentTime.format(),
+      //   nineAMWindow: windowStart.format() + " - " + windowEnd.format(),
+      // });
 
       // Skip if not in 9 AM window
       if (!currentTime.isBetween(windowStart, windowEnd, null, "[)")) {
@@ -71,6 +81,7 @@ export const startCheckInReminderJob = async () => {
       if (sent) reminderTracker[userId] = currentTime;
     }
   };
+
 
   // Cron schedule: every 1 min (safer for window precision)
   cron.schedule("*/1 * * * *", sendReminders, { timezone: "UTC" });
