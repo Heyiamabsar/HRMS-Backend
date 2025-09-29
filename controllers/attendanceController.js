@@ -82,7 +82,7 @@ export const markInTime = async (req, res) => {
       punchedFrom = "Web";
     }
 
-    let todayStatus = "Absent"; 
+    let todayStatus = "Absent";
     const inTime = moment().tz(userTimeZone).toDate();
     const nineFifteen = moment(`${date} 09:15 AM`, "YYYY-MM-DD hh:mm A").tz(
       userTimeZone
@@ -471,7 +471,7 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
     }
 
     // const userTimeZone = user.timeZone;
-    const userTimeZone = "UTC";
+    const userTimeZone = user?.timeZone || "UTC";
 
     const currentDay = moment().tz(userTimeZone).format("dddd");
 
@@ -481,11 +481,6 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
     const branchId = userBranch._id;
     const branch = await branchModel.findById({ _id: user.branch._id })
 
-    const branchWeekends = branch.weekends;
-
-    const isWeekend = branchWeekends.includes(currentDay);
-
-
     if (!branch) {
       return res.status(400).json({
         success: false,
@@ -493,7 +488,7 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
         message: "User branch not found",
       });
     }
-    console.log("branch", branch)
+
     if (!Array.isArray(branch.weekends) || branch.weekends.length === 0) {
       return res.status(400).json({
         success: false,
@@ -501,6 +496,9 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
         message: "Branch weekends not configured. Please update branch settings.",
       });
     }
+
+    const branchWeekends = branch.weekends;
+    const isWeekend = branchWeekends.includes(currentDay);
 
 
     // ✅ Check branch-specific holiday
@@ -523,20 +521,25 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
           status: "Holiday",
           location: { checkIn: null, checkOut: null }
         });
+      } else {
+        attendance.status = "Holiday"; // ✅ Save status
+        await attendance.save();
       }
+
       return res.status(200).json({
         success: true,
         statusCode: 200,
-        message: `Today is a holiday for branch: ${branch.name}`,
+        message: `Today is a holiday for branch: ${branch.branchName}`,
         date: dateKey,
         attendance,
         branch: {
-          name: branch.name,
+          name: branch.branchName,
           weekends: branchWeekends,
         },
       });
     }
 
+    // ✅ If no holiday → mark weekend or absent
     // ✅ If no holiday → mark weekend or absent
     if (!attendance) {
       attendance = await AttendanceModel.create({
@@ -547,15 +550,13 @@ export const getSingleUserAttendanceByDate = async (req, res) => {
         status: isWeekend ? "Weekend" : "Absent",
         location: { checkIn: null, checkOut: null }
       });
-    } else if (
-      !attendance.inTime &&
-      !attendance.outTime &&
-      (attendance.status === "Absent" || !attendance.status)
-    ) {
-      attendance.status = isWeekend ? "Weekend" : "Absent";
-      await attendance.save();
+    } else {
+      // Agar attendance hai but inTime/outTime nahi hai toh status update karo
+      if (!attendance.inTime && !attendance.outTime) {
+        attendance.status = isWeekend ? "Weekend" : "Absent"; // ✅ Save status
+        await attendance.save();
+      }
     }
-
     // ✅ Populate user details (NO save after populate)
     await attendance.populate(
       "userId",
@@ -636,6 +637,15 @@ export const getAllUsersTodayAttendance = async (req, res) => {
         holidayMap[moment(h.date).format("YYYY-MM-DD")] = h;
       });
 
+      const att = attendanceMap[userId];
+      const leave = leaveMap[userId];
+      const isHoliday = holidayMap[dateKey] ? true : false;
+      const isWeekend = branchWeekends.includes(currentDay);
+
+      console.log('user', user.email)
+      console.log('currentDay', currentDay)
+      console.log('branchWeekends', branchWeekends)
+
       let record = {
         user: {
           userId: user._id || null,
@@ -654,29 +664,52 @@ export const getAllUsersTodayAttendance = async (req, res) => {
         status: "Absent"
       };
 
-      const att = attendanceMap[userId];
-      const leave = leaveMap[userId];
-      const isHoliday = holidayMap[dateKey] ? true : false;
-      const isWeekend = branchWeekends.includes(currentDay);
+      // if (att) {
+      //   record.inTime = att.inTime || null;
+      //   record.outTime = att.outTime || null;
+      //   record.duration = att.duration || null;
+      //   record.status = att.status || "Present";
 
-      if (att) {
-        record.inTime = att.inTime || null;
-        record.outTime = att.outTime || null;
-        record.duration = att.duration || null;
-        record.status = att.status || "Present";
-
-        if (isHoliday && att.inTime && att.outTime) {
+      //   if (isHoliday && att.inTime && att.outTime) {
+      //     record.status = "Over Time";
+      //   } else if (isHoliday) {
+      //     record.status = "Holiday";
+      //   }
+      // } else if (leave) {
+      //   record.status = "Leave";
+      // } else if (isHoliday) {
+      //   record.status = "Holiday";
+      // } else if (isWeekend) {
+      //   record.status = "Weekend";
+      // }
+      // ✅ Status calculation
+      if (isWeekend) {
+        record.status = "Weekend";
+      } else if (isHoliday) {
+        if (att && att.inTime && att.outTime) {
           record.status = "Over Time";
-        } else if (isHoliday) {
+          record.inTime = att.inTime || null;
+          record.outTime = att.outTime || null;
+          record.duration = att.duration || null;
+        } else {
           record.status = "Holiday";
         }
       } else if (leave) {
         record.status = "Leave";
-      } else if (isHoliday) {
-        record.status = "Holiday";
-      } else if (isWeekend) {
-        record.status = "Weekend";
+      } else if (att) {
+        record.inTime = att.inTime || null;
+        record.outTime = att.outTime || null;
+        record.duration = att.duration || null;
+        record.status = att.status || "Present";
       }
+
+
+      // ✅ DB update / upsert attendance
+      await AttendanceModel.findOneAndUpdate(
+        { userId, date: dateKey },
+        { $set: record },
+        { upsert: true, new: true }
+      );
 
       result.push(record);
     }
@@ -707,6 +740,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
     const { date } = req.query; // Or req.body if you prefer POST
     const targetDate = date ? moment(date, "YYYY-MM-DD") : moment();
     const dateKey = targetDate.format("YYYY-MM-DD");
+    console.log({ date, targetDate, dateKey })
 
     // ✅ Fetch all users (active only if needed)
     const users = await userModel.find(withoutDeletedUsers())
@@ -744,10 +778,10 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
       // const userTimeZone = user?.branch?.timeZone || user?.timeZone || "UTC";
       const userTimeZone = user.timeZone || "UTC";
       const branchWeekends = user?.branch?.weekends || [];
-     const selectedDay = targetDate.clone().tz(userTimeZone).format("dddd");
-     console.log('user',user.first_name,user.last_name)
-      console.log('selectedDay',selectedDay)
-      console.log('branchWeekends',branchWeekends)
+      const selectedDay = targetDate.clone().tz(userTimeZone).format("dddd");
+      console.log('user', user.email)
+      console.log('selectedDay', selectedDay)
+      console.log('branchWeekends', branchWeekends)
 
       // ✅ Get branch-specific holidays
       const holidays = await getBranchHolidaysForUser(user);
@@ -802,6 +836,11 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
       }
 
       result.push(record);
+      await AttendanceModel.findOneAndUpdate(
+        { userId, date: dateKey },
+        { $set: record },
+        { upsert: true, new: true }
+      );
     }
 
     res.status(200).json({
@@ -834,7 +873,7 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
     }
 
     // const userTimeZone = user.timeZone || "UTC";
-    const userTimeZone = "UTC";
+    const userTimeZone =user.timeZone || "UTC";
 
     const branchId = user.branch || null;
     if (!branchId) {
@@ -1281,7 +1320,6 @@ export const getAllUsersAttendanceReport = async (req, res) => {
     });
   }
 };
-
 
 
 export const backFillAttendance = async (req, res) => {

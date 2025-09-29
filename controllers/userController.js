@@ -53,7 +53,7 @@ export const saveUserTimeZone = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const { page = 1, limit = 15 } = req.query;
-    const filter = withoutDeletedUsers(req.user.role === 'hr' ? { role: { $in: ['employee', 'hr'] } } : { role: { $in: ['employee', 'hr', 'admin'] } })
+    // const filter = withoutDeletedUsers(req.user.role === 'hr' ? { role: { $in: ['employee', 'hr'] } } : { role: { $in: ['employee', 'hr', 'admin'] } })
     const users = await User.find(withoutDeletedUsers()).populate("branch", "_id branchName")
       .select("-password -__v")
       .skip((page - 1) * limit)
@@ -79,6 +79,40 @@ export const getAllUsers = async (req, res) => {
     res.status(500).json({ statusCode: 500, success: false, message: 'Failed to fetch users', error: error.message });
   }
 };
+
+export const getAllUsersWithoutPagination = async (req, res) => {
+  try {
+    // Apply role-based filter
+    // const filter = withoutDeletedUsers(
+    //   req.user.role === 'hr'
+    //     ? { role: { $in: ['employee', 'hr'] } }
+    //     : { role: { $in: ['employee', 'hr', 'admin'] } }
+    // );
+
+    // Fetch all users based on filter
+    const users = await User.find(withoutDeletedUsers()).select("first_name last_name email _id").lean();
+
+    const total = users.length;
+
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: 'Users fetched successfully',
+      data: {
+        count: total,
+        users,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message,
+    });
+  }
+};
+
 
 export const getAllDeletedUsers = async (req, res) => {
   try {
