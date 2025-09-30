@@ -807,7 +807,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
         outTime: null,
         duration: null,
         status: "Absent",
-        location: null
+        location: { checkIn: {}, checkOut: {} }
       };
 
       const att = attendanceMap[userId];
@@ -820,7 +820,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
         record.outTime = att.outTime;
         record.duration = att.duration;
         record.status = att.status || "Present";
-        record.location = att.location || null;
+        record.location = att.location || { checkIn: {}, checkOut: {} };
 
         if (isHoliday && att.inTime && att.outTime) {
           record.status = "Over Time";
@@ -927,16 +927,7 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
       const dateKey = current.format("YYYY-MM-DD");
       const currentDay = current.format("dddd");
 
-      let record = {
-        date: dateKey,
-        status: "Absent",
-        inTime: null,
-        outTime: null,
-        duration: null,
-        leaveType: null,
-        location: null
-      };
-
+    
       if (attendanceMap[dateKey]) {
         record = { ...record, ...attendanceMap[dateKey] };
 
@@ -1036,7 +1027,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
         outTime: null,
         duration: null,
         leaveType: null,
-        location: null
+        location: { checkIn: {}, checkOut: {} }
       };
 
       if (attendanceMap[dateKey]) {

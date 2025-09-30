@@ -97,3 +97,30 @@ export const calculateLeaveBalance = async (employeeId) => {
   return 14 - totalLeaveTaken;
 };
 
+
+
+export const fixInvalidLocationDocs = async () => {
+  try {
+    // Find all docs where location exists but is not an object
+    const invalidDocs = await AttendanceModel.find({
+      location: { $exists: true, $not: { $type: "object" } }
+    });
+
+    if (!invalidDocs.length) {
+      console.log("✅ No invalid documents found. All good!");
+      return;
+    }
+
+    console.log(`⚠️ Found ${invalidDocs.length} invalid documents. Fixing...`);
+
+    // Update all invalid docs in one go
+    const result = await AttendanceModel.updateMany(
+      { location: { $exists: true, $not: { $type: "object" } } },
+      { $set: { location: { checkIn: {}, checkOut: {} } } }
+    );
+
+    console.log(`✅ Fixed ${result.modifiedCount} documents.`);
+  } catch (error) {
+    console.error("❌ Error while fixing invalid documents:", error);
+  }
+};

@@ -7,6 +7,7 @@ import departmentModel from '../models/departmentModel.js';
 import designationModel from '../models/designationModel.js';
 import { withoutDeletedUsers } from '../utils/commonUtils.js'
 import crypto from "crypto";
+import timezoneToCountryName from '../utils/timeZoneToCountryName.js';
 
 // Save User Time Zone
 export const saveUserTimeZone = async (req, res) => {
@@ -22,6 +23,21 @@ export const saveUserTimeZone = async (req, res) => {
     if (!isValidTimeZone) {
       return res.status(400).json({ statusCode: 400, success: false, message: 'Invalid time zone provided' });
     }
+
+    const countryDetailsByTimeZone = timezoneToCountryName(timeZone);
+    const existingCountry = await countryTZModel.findOne({ tz: timeZone });
+
+    if (!existingCountry) {
+      const timeZoneObj = await countryTZModel.create({
+        name: countryDetailsByTimeZone ? countryDetailsByTimeZone.name : 'Country not found',
+        tz: timeZone,
+        code: countryDetailsByTimeZone ? countryDetailsByTimeZone.code : 'Code not found'
+      });
+      console.log("New timeZoneObject created:", timeZoneObj);
+    } else {
+      console.log("Country already exists, skipping creation:", existingCountry);
+    }
+
 
     const user = await User.findByIdAndUpdate(
       req.user._id,

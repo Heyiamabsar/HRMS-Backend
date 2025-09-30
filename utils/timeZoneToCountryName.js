@@ -16,9 +16,9 @@ const timezoneToCountryName = (timezone) => {
   if (!code) return null;
 
   const name = countries.getName(code, "en"); 
-  return { code, name };
+  return { code, name , timezone  };
 };
-// export default timezoneToCountryName;
+export default timezoneToCountryName;
 
-console.log(timezoneToCountryName("Asia/Bahrain"));
+// console.log(timezoneToCountryName("Europe/Amsterdam"));
     
