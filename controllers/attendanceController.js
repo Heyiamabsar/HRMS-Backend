@@ -867,7 +867,7 @@ export const getAllUsersAttendanceByDate = async (req, res) => {
 export const getLoginUserFullAttendanceHistory = async (req, res) => {
   try {
     const userId = req.user._id;
-    const user = await userModel.findById(userId).populate("branch", "_id branchName");
+    const user = await userModel.findById(userId).populate("branch");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
@@ -875,30 +875,18 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
     // const userTimeZone = user.timeZone || "UTC";
     const userTimeZone = user.timeZone || "UTC";
 
-    const branchId = user.branch || null;
-    if (!branchId) {
-      return res.status(400).json({ success: false, message: "User branch not found" });
-    }
-    const branch = await branchModel.findById(branchId);
-    if (!branch) {
+    if (!user.branch) {
       return res.status(400).json({ success: false, message: "Branch not found" });
     }
 
-    if (!Array.isArray(branch.weekends) || branch.weekends.length === 0) {
-      return res.status(400).json({ success: false, message: "Branch weekends not configured. Please update branch settings." });
-    }
-    const branchWeekends = branch?.weekends || [];
+    const branchWeekends = user.branch?.weekends || [];
     const joiningDate = moment(user.joining_date).startOf("day");
     const today = moment().tz(userTimeZone).startOf("day");
 
     // ✅ Fetch Attendance, Holidays (filtered by branch), and Leaves
     const attendanceRecords = await AttendanceModel.find({ userId }).lean();
 
-    // const holidays = await holidayModel.find({ branch: branch._id,isOptional: false, }).sort({ date: 1 });
-    // const holidayRecords = await holidayModel.find({
-    //   isOptional: false,
-    //   branch: branch._id
-    // }).lean();
+
     const holidayRecords = await getBranchHolidaysForUser(user);
     const leaveRecords = await LeaveModel.find({ userId, status: "Approved" }).lean();
 
@@ -985,11 +973,14 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
 export const getSingleUserFullAttendanceHistory = async (req, res) => {
   try {
     const userId = req.params.id;
-    const user = await userModel.findById(userId).populate("branch", "_id branchName");
+    const user = await userModel.findById(userId).populate("branch");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    if (!user.branch) {
+      return res.status(400).json({ success: false, message: "Branch not found" });
+    }
     // const userTimeZone = user.timeZone || "UTC";
     const userTimeZone = user.timeZone || "UTC";
 
