@@ -10,11 +10,11 @@ const connectDB = async () => {
       useUnifiedTopology: true
     });
 
-    (async () => {
-      await mongoose.connect(process.env.MONGO_URI);
-      await fixInvalidLocationDocs();
-      await mongoose.disconnect();
-    })();
+    // (async () => {
+    //   await mongoose.connect(process.env.MONGO_URI);
+    //   await fixInvalidLocationDocs();
+    //   await mongoose.disconnect();
+    // })();
 
     console.log(`DataBase Connected Successfully`);
   } catch (error) {
