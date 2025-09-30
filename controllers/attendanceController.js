@@ -873,7 +873,7 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
     }
 
     // const userTimeZone = user.timeZone || "UTC";
-    const userTimeZone =user.timeZone || "UTC";
+    const userTimeZone = user.timeZone || "UTC";
 
     const branchId = user.branch || null;
     if (!branchId) {
@@ -927,7 +927,17 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
       const dateKey = current.format("YYYY-MM-DD");
       const currentDay = current.format("dddd");
 
-    
+      let record = {
+        date: dateKey,
+        status: "Absent",
+        inTime: null,
+        outTime: null,
+        duration: null,
+        leaveType: null,
+        location: { checkIn: {}, checkOut: {} },
+      };
+
+
       if (attendanceMap[dateKey]) {
         record = { ...record, ...attendanceMap[dateKey] };
 
