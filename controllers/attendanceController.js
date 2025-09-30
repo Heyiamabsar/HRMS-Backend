@@ -905,19 +905,22 @@ export const getLoginUserFullAttendanceHistory = async (req, res) => {
     // ✅ Convert arrays to maps for quick lookup
     const attendanceMap = {};
     attendanceRecords.forEach(att => {
-      attendanceMap[moment(att.date).format("YYYY-MM-DD")] = att;
+      const attDateKey = moment(att.date).tz(userTimeZone).format("YYYY-MM-DD");
+      attendanceMap[attDateKey] = att;
     });
 
     const holidayMap = {};
     holidayRecords.forEach(holiday => {
-      holidayMap[moment(holiday.date).format("YYYY-MM-DD")] = holiday;
+      const key = moment(holiday.date).tz(userTimeZone).format("YYYY-MM-DD");
+      holidayMap[key] = holiday;
     });
 
     const leaveMap = {};
     leaveRecords.forEach(leave => {
-      const leaveDate = moment(leave.date).format("YYYY-MM-DD");
-      leaveMap[leaveDate] = leave;
+      const key = moment(leave.date).tz(userTimeZone).format("YYYY-MM-DD");
+      leaveMap[key] = leave;
     });
+
 
     // ✅ Build full history
     const fullHistory = [];
@@ -988,7 +991,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
     }
 
     // const userTimeZone = user.timeZone || "UTC";
-    const userTimeZone = "UTC";
+    const userTimeZone = user.timeZone || "UTC";
 
     const branchWeekends = user.branch?.weekends || [];
     const joiningDate = moment(user.joining_date).startOf("day");
@@ -996,7 +999,7 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
 
     // ✅ Fetch Attendance, Holidays (filtered by branch), and Leaves
     const attendanceRecords = await AttendanceModel.find({ userId }).lean();
-    console.log('attendanceRecords', attendanceRecords)
+
     // const holidays = await holidayModel.find({ branch: branch._id,isOptional: false, }).sort({ date: 1 });
     // const holidayRecords = await holidayModel.find({
     //   isOptional: false,
@@ -1008,18 +1011,20 @@ export const getSingleUserFullAttendanceHistory = async (req, res) => {
     // ✅ Convert arrays to maps for quick lookup
     const attendanceMap = {};
     attendanceRecords.forEach(att => {
-      attendanceMap[moment(att.date).format("YYYY-MM-DD")] = att;
+      const attDateKey = moment(att.date).tz(userTimeZone).format("YYYY-MM-DD");
+      attendanceMap[attDateKey] = att;
     });
 
     const holidayMap = {};
     holidayRecords.forEach(holiday => {
-      holidayMap[moment(holiday.date).format("YYYY-MM-DD")] = holiday;
+      const key = moment(holiday.date).tz(userTimeZone).format("YYYY-MM-DD");
+      holidayMap[key] = holiday;
     });
 
     const leaveMap = {};
     leaveRecords.forEach(leave => {
-      const leaveDate = moment(leave.date).format("YYYY-MM-DD");
-      leaveMap[leaveDate] = leave;
+      const key = moment(leave.date).tz(userTimeZone).format("YYYY-MM-DD");
+      leaveMap[key] = leave;
     });
 
     // ✅ Build full history
