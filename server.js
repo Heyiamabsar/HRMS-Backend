@@ -103,8 +103,14 @@ res.send("HRMS Backend is running ");
 
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  connectDB();
-  // startCheckInReminderJob();
-});
+
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    connectDB();
+    // startCheckInReminderJob();
+  });
+}
+
+export default app;
