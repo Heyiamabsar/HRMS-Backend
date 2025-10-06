@@ -45,33 +45,6 @@ A comprehensive HRMS backend built with Node.js, Express, and MongoDB that provi
 - ✅ Text search across entities
 - ✅ RESTful API design
 - ✅ CORS protection
-- ✅ **Comprehensive test coverage (60+ tests)**
-
-## 🧪 Testing
-
-This project includes a complete testing infrastructure covering all types of testing:
-
-### Test Coverage
-- ✅ **Unit Tests** (20 tests) - Utilities, middleware, and models
-- ✅ **Integration Tests** (36 tests) - API endpoints
-- ✅ **E2E Tests** (4 tests) - Complete user workflows
-- ✅ **Security Tests** - Authentication and authorization
-- ✅ **Performance Tests** - Load testing guides
-
-### Running Tests
-```bash
-npm test                    # Run all tests
-npm run test:unit          # Unit tests only
-npm run test:integration   # Integration tests only
-npm run test:watch         # Watch mode for development
-npm run test:coverage      # Generate coverage report
-```
-
-### Testing Documentation
-- 📖 [TESTING.md](TESTING.md) - Comprehensive testing guide
-- 📖 [TEST_GUIDE.md](TEST_GUIDE.md) - Quick start guide
-- 📖 [PERFORMANCE_TESTING.md](PERFORMANCE_TESTING.md) - Load testing guide
-- 📖 [TESTING_SUMMARY.md](TESTING_SUMMARY.md) - Complete implementation summary
 
 ## 🛠️ Tech Stack
 
