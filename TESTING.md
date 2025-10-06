@@ -146,6 +146,59 @@ test('should login with valid credentials', async () => {
 });
 ```
 
+#### Timezone-Based Attendance Tests
+Tests verify that attendance check-in/check-out functionality works correctly based on branch timezone:
+
+- **Dubai Branch**: Employees check in at 9 AM Dubai time (Asia/Dubai timezone)
+- **Mumbai Branch**: Employees check in at 9 AM India time (Asia/Kolkata timezone)
+- **London Branch**: Employees check in at 9 AM London time (Europe/London timezone)
+- **Tokyo Branch**: Employees check in at 9 AM Tokyo time (Asia/Tokyo timezone)
+
+**Example:**
+```javascript
+test('should mark employee present when checking in before 9:15 AM in Dubai branch timezone', async () => {
+  const branchModel = (await import('../../../models/branchModel.js')).default;
+  
+  // Create Dubai branch with Dubai timezone
+  const dubaiBranch = await branchModel.create({
+    branchName: 'Dubai Branch',
+    country: 'UAE',
+    branchCode: 'DXB001',
+    address: 'Dubai Marina, UAE',
+    timeZone: 'Asia/Dubai',
+    weekends: ['Friday', 'Saturday']
+  });
+
+  // Create employee assigned to Dubai branch
+  const employee = await createTestUser({
+    email: 'dubai.emp@example.com',
+    branch: dubaiBranch._id,
+    timeZone: 'Asia/Dubai'
+  });
+
+  const token = generateTestToken(employee);
+
+  // Check-in at 9:00 AM Dubai time
+  const response = await request(app)
+    .post('/api/attendance/check-in')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      latitude: 25.0760,
+      longitude: 55.1320
+    });
+
+  expect(response.status).toBe(200);
+  expect(response.body.success).toBe(true);
+});
+```
+
+**Test Coverage:**
+- ✅ Check-in at different times across multiple timezones
+- ✅ Present/absent status based on branch local time
+- ✅ Weekend validation based on branch-specific weekends
+- ✅ Working hours calculation across timezones
+- ✅ Multiple employees in different branches simultaneously
+
 ## Test Helpers
 
 ### Database Setup

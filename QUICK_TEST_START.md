@@ -43,9 +43,9 @@ npm run test:watch
 
 ## 🎯 Test Statistics
 
-- **Total Tests:** 60+
+- **Total Tests:** 66+
 - **Unit Tests:** 20
-- **Integration Tests:** 36
+- **Integration Tests:** 42 (includes 6 timezone-based attendance tests)
 - **E2E Tests:** 4
 - **Test Files:** 11
 - **Documentation Files:** 5

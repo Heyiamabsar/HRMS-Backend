@@ -103,12 +103,10 @@ export const createTestBranch = async (branchData = {}) => {
   const defaultBranch = {
     branchName: 'Test Branch',
     address: 'Test Address',
-    city: 'Test City',
-    state: 'Test State',
     country: 'Test Country',
-    zipCode: '12345',
-    phone: '+1234567890',
-    email: 'branch@example.com',
+    branchCode: 'TEST001',
+    timeZone: 'UTC',
+    weekends: ['Sunday'],
     ...branchData
   };
 

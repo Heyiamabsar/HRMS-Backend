@@ -77,10 +77,10 @@ tests/
 ### Integration Tests
 - ✅ **auth API** (10 tests) - Login, register, logout, refresh token
 - ✅ **employee API** (10 tests) - CRUD operations with role-based access
-- ✅ **attendance API** (8 tests) - Check-in, check-out, attendance records
+- ✅ **attendance API** (14 tests) - Check-in, check-out, attendance records, timezone-based attendance for different branches
 - ✅ **leave API** (8 tests) - Leave application, approval, rejection
 
-**Total: 56 tests covering critical functionality**
+**Total: 62 tests covering critical functionality**
 
 ## MongoDB Memory Server Setup
 

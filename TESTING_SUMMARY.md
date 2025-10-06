@@ -44,7 +44,7 @@ Integration tests verify API endpoints and their interactions with the database.
 **Coverage:**
 - ✅ Authentication API (10 tests)
 - ✅ Employee Management API (10 tests)
-- ✅ Attendance System API (8 tests)
+- ✅ Attendance System API (14 tests) - Including timezone-based attendance for different branches
 - ✅ Leave Management API (8 tests)
 - ✅ End-to-End User Journeys (4 tests)
 
@@ -230,10 +230,10 @@ Input validation and data integrity tests.
 
 ```
 Total Test Suites: 8
-Total Tests: 60+
+Total Tests: 66+
 
 Unit Tests:        20 tests
-Integration Tests: 36 tests
+Integration Tests: 42 tests
 E2E Tests:         4 tests
 ```
 
@@ -243,12 +243,12 @@ E2E Tests:         4 tests
 |---------|------------|-------------------|-----------|-------|
 | Authentication | 8 | 10 | 2 | 20 |
 | Employee Management | - | 10 | 1 | 11 |
-| Attendance | - | 8 | - | 8 |
+| Attendance | - | 14 | - | 14 |
 | Leave Management | - | 8 | - | 8 |
 | Utilities | 4 | - | - | 4 |
 | Models | 8 | - | - | 8 |
 | Security | - | - | 1 | 1 |
-| **Total** | **20** | **36** | **4** | **60** |
+| **Total** | **20** | **42** | **4** | **66** |
 
 ## 🚀 Running Tests
 
